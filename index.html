@@ -14,7 +14,7 @@
         body {
             font-family: 'Georgia', serif;
             overflow: hidden;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            background: linear-gradient(135deg, #2a2a3e 0%, #3a4a5e 100%);
             cursor: default;
         }
 
@@ -117,6 +117,27 @@
         .scene-title.visible {
             opacity: 1;
         }
+
+        #fragment-description {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 16px;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            letter-spacing: 1px;
+            max-width: 500px;
+            line-height: 1.6;
+            font-style: italic;
+        }
+
+        #fragment-description.visible {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
@@ -126,6 +147,7 @@
         <div id="instruction">Click the mirror to shatter it</div>
         <button id="back-button">← Back</button>
         <div id="scene-title" class="scene-title"></div>
+        <div id="fragment-description"></div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -148,6 +170,7 @@
         const scenes = [
             {
                 name: 'Frozen Memory',
+                description: 'A world suspended in ice, where time crystallizes into still moments',
                 color: 0x4a90e2,
                 filter: 'cold',
                 fogColor: 0x89CFF0,
@@ -155,6 +178,7 @@
             },
             {
                 name: 'Golden Hours',
+                description: 'Warm light filtered through nostalgia, soft and sepia-toned',
                 color: 0xe8a735,
                 filter: 'warm',
                 fogColor: 0xffd9a3,
@@ -162,6 +186,7 @@
             },
             {
                 name: 'Shadow Play',
+                description: 'Stark contrasts dance in monochrome, a film noir reverie',
                 color: 0x2a2a2a,
                 filter: 'noir',
                 fogColor: 0x333333,
@@ -169,6 +194,7 @@
             },
             {
                 name: 'Dream Drift',
+                description: 'Reality bends and softens at the edges, ethereal and weightless',
                 color: 0xb19cd9,
                 filter: 'dreamy',
                 fogColor: 0xdda0dd,
@@ -180,7 +206,7 @@
         function init() {
             // Scene setup
             scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x1a1a2e, 10, 50);
+            scene.fog = new THREE.Fog(0x3a4a5e, 10, 50);
 
             // Camera
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -236,13 +262,17 @@
             frame.position.z = -0.1;
             mirror.add(frame);
 
-            // Lighting for mirror
-            const light = new THREE.PointLight(0xffffff, 1, 100);
-            light.position.set(0, 0, 10);
-            scene.add(light);
-
-            const ambientLight = new THREE.AmbientLight(0x404040);
+            // Lighting for mirror - soft and even
+            const ambientLight = new THREE.AmbientLight(0x808080, 1.2);
             scene.add(ambientLight);
+
+            const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight1.position.set(5, 5, 5);
+            scene.add(directionalLight1);
+
+            const directionalLight2 = new THREE.DirectionalLight(0xaaaaff, 0.3);
+            directionalLight2.position.set(-5, -3, 3);
+            scene.add(directionalLight2);
         }
 
         // Shatter the mirror into fragments
@@ -256,8 +286,8 @@
             // Remove original mirror
             scene.remove(mirror);
 
-            // Create irregular fragments
-            const fragmentCount = 12;
+            // Create irregular fragments - one for each scene
+            const fragmentCount = 4;
             const mirrorPos = { x: 0, y: 0, z: 0 };
 
             for (let i = 0; i < fragmentCount; i++) {
@@ -314,31 +344,36 @@
 
             const mesh = new THREE.Mesh(geometry, material);
 
-            // Position in grid-like pattern with randomness
-            const cols = 4;
-            const rows = 3;
-            const col = index % cols;
-            const row = Math.floor(index / cols);
+            // Position 4 fragments in quadrant pattern (spreading from center)
+            const positions = [
+                { x: -1.2, y: 1.0 },   // Top left
+                { x: 1.2, y: 1.0 },    // Top right
+                { x: -1.2, y: -1.0 },  // Bottom left
+                { x: 1.2, y: -1.0 }    // Bottom right
+            ];
 
-            const startX = (col - cols / 2 + 0.5) * 0.8;
-            const startY = (row - rows / 2 + 0.5) * 1.1;
+            const startPos = positions[index];
+            mesh.position.set(startPos.x, startPos.y, 0);
 
-            mesh.position.set(startX, startY, 0);
+            // Target positions spread out much more dramatically
+            const spreadFactor = 3.5;
+            const targetX = startPos.x * spreadFactor + (Math.random() - 0.5) * 0.8;
+            const targetY = startPos.y * spreadFactor + (Math.random() - 0.5) * 0.8;
 
             return {
                 mesh: mesh,
-                originalPos: { x: startX, y: startY, z: 0 },
+                originalPos: { x: startPos.x, y: startPos.y, z: 0 },
                 targetPos: {
-                    x: startX + (Math.random() - 0.5) * 1.5,
-                    y: startY + (Math.random() - 0.5) * 1.5,
-                    z: (Math.random() - 0.5) * 0.8
+                    x: targetX,
+                    y: targetY,
+                    z: (Math.random() - 0.5) * 1.5
                 },
                 rotation: {
-                    x: (Math.random() - 0.5) * 0.3,
-                    y: (Math.random() - 0.5) * 0.3,
-                    z: (Math.random() - 0.5) * 0.3
+                    x: (Math.random() - 0.5) * 0.5,
+                    y: (Math.random() - 0.5) * 0.5,
+                    z: (Math.random() - 0.5) * 0.5
                 },
-                sceneIndex: index % scenes.length,
+                sceneIndex: index,
                 hovered: false
             };
         }
@@ -398,10 +433,13 @@
                 raycaster.setFromCamera(mouse, camera);
                 const intersects = raycaster.intersectObjects(fragments.map(f => f.mesh));
 
+                const descriptionElement = document.getElementById('fragment-description');
+
                 // Reset previous hovered fragment
                 if (hoveredFragment && !intersects.find(i => i.object === hoveredFragment.mesh)) {
                     hoveredFragment.hovered = false;
                     hoveredFragment = null;
+                    descriptionElement.classList.remove('visible');
                 }
 
                 // Set new hovered fragment
@@ -411,9 +449,15 @@
                         fragment.hovered = true;
                         hoveredFragment = fragment;
                         document.body.style.cursor = 'pointer';
+
+                        // Show scene description
+                        const sceneData = scenes[fragment.sceneIndex];
+                        descriptionElement.textContent = sceneData.description;
+                        descriptionElement.classList.add('visible');
                     }
                 } else {
                     document.body.style.cursor = 'default';
+                    descriptionElement.classList.remove('visible');
                 }
             }
         }
@@ -441,6 +485,7 @@
 
             currentState = STATE.TRANSITIONING;
             document.body.style.cursor = 'default';
+            document.getElementById('fragment-description').classList.remove('visible');
 
             const sceneData = scenes[fragment.sceneIndex];
             const duration = 1500;
@@ -761,7 +806,7 @@
 
                     // Reset scene
                     scene.background = null;
-                    scene.fog = new THREE.Fog(0x1a1a2e, 10, 50);
+                    scene.fog = new THREE.Fog(0x3a4a5e, 10, 50);
 
                     // Recreate fragments
                     shatterMirror();

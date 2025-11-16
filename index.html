@@ -22,6 +22,7 @@
             display: block;
             width: 100vw;
             height: 100vh;
+            filter: sepia(0.15) contrast(1.05) brightness(0.98);
         }
 
         #ui-overlay {
@@ -339,17 +340,21 @@
             frame.position.z = -0.1;
             mirror.add(frame);
 
-            // Lighting for mirror - soft and even
-            const ambientLight = new THREE.AmbientLight(0x808080, 1.2);
+            // Lighting for mirror - bright and clear
+            const ambientLight = new THREE.AmbientLight(0xaaaaaa, 1.8);
             scene.add(ambientLight);
 
-            const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.6);
+            const directionalLight1 = new THREE.DirectionalLight(0xffffff, 1.0);
             directionalLight1.position.set(5, 5, 5);
             scene.add(directionalLight1);
 
-            const directionalLight2 = new THREE.DirectionalLight(0xaaaaff, 0.3);
+            const directionalLight2 = new THREE.DirectionalLight(0xccddff, 0.5);
             directionalLight2.position.set(-5, -3, 3);
             scene.add(directionalLight2);
+
+            const directionalLight3 = new THREE.DirectionalLight(0xffffff, 0.4);
+            directionalLight3.position.set(0, -5, 2);
+            scene.add(directionalLight3);
         }
 
         // Shatter the mirror into fragments
@@ -518,7 +523,7 @@
             const rowItemCount = isTopRow ? 4 : 3;
 
             // Calculate horizontal position with spacing
-            const spacing = 2.2;
+            const spacing = 2.8;
             const rowWidth = (rowItemCount - 1) * spacing;
             const startX = -rowWidth / 2;
             const baseX = startX + posInRow * spacing;
@@ -712,7 +717,7 @@
 
                     // Show progress
                     const sceneProgress = document.getElementById('scene-progress');
-                    sceneProgress.textContent = `已恢复 ${completedScenes.size + 1}/${scenes.length}`;
+                    sceneProgress.textContent = `Restored ${completedScenes.size + 1}/${scenes.length}`;
                     sceneProgress.classList.add('visible');
                 }
             }

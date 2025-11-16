@@ -583,11 +583,6 @@
                     fragment.mesh.rotation.z += fragment.rotationSpeed.z;
 
                     requestAnimationFrame(animate);
-                } else {
-                    // Set final rotation after animation completes
-                    fragment.mesh.rotation.x = fragment.rotation.x;
-                    fragment.mesh.rotation.y = fragment.rotation.y;
-                    fragment.mesh.rotation.z = fragment.rotation.z;
                 }
             }
 

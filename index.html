@@ -432,6 +432,10 @@
                         fragment.rotation.y,
                         fragment.rotation.z
                     );
+                    // Save current rotation as rest position
+                    fragment.restRotation.x = fragment.rotation.x;
+                    fragment.restRotation.y = fragment.rotation.y;
+                    fragment.restRotation.z = fragment.rotation.z;
                 }
             }
 
@@ -544,6 +548,7 @@
                     y: (Math.random() - 0.5) * 0.03,
                     z: (Math.random() - 0.5) * 0.03
                 },
+                restRotation: { x: 0, y: 0, z: 0 }, // Will store final rotation after shatter
                 sceneIndex: index,
                 hovered: false,
                 completed: false,
@@ -583,6 +588,11 @@
                     fragment.mesh.rotation.z += fragment.rotationSpeed.z;
 
                     requestAnimationFrame(animate);
+                } else {
+                    // Save final rotation as rest position
+                    fragment.restRotation.x = fragment.mesh.rotation.x;
+                    fragment.restRotation.y = fragment.mesh.rotation.y;
+                    fragment.restRotation.z = fragment.mesh.rotation.z;
                 }
             }
 
@@ -1323,16 +1333,18 @@
                         fragment.mesh.material.emissive.setHex(0xccddff);
                         fragment.mesh.material.emissiveIntensity = 0.4;
 
-                        // Gentle sway (left-right tilt)
+                        // Gentle sway (left-right tilt) on top of rest rotation
                         const swayAmount = 0.08;
-                        fragment.mesh.rotation.z = Math.sin(time * 2 + fragment.swayPhase) * swayAmount;
+                        fragment.mesh.rotation.z = fragment.restRotation.z + Math.sin(time * 2 + fragment.swayPhase) * swayAmount;
                     } else {
                         // Reset
                         fragment.mesh.material.emissive.setHex(0x111111);
                         fragment.mesh.material.emissiveIntensity = 0.1;
 
-                        // Return to neutral rotation
-                        fragment.mesh.rotation.z *= 0.9;
+                        // Return to rest rotation (smoothly)
+                        fragment.mesh.rotation.x += (fragment.restRotation.x - fragment.mesh.rotation.x) * 0.1;
+                        fragment.mesh.rotation.y += (fragment.restRotation.y - fragment.mesh.rotation.y) * 0.1;
+                        fragment.mesh.rotation.z += (fragment.restRotation.z - fragment.mesh.rotation.z) * 0.1;
                     }
                 });
             }

@@ -259,24 +259,24 @@
 
             const now = audioContext.currentTime;
 
-            // Create multiple oscillators for glass-like sound
-            for (let i = 0; i < 7; i++) {
+            // Create multiple oscillators for crisp glass-like sound
+            for (let i = 0; i < 10; i++) {
                 const oscillator = audioContext.createOscillator();
                 const gainNode = audioContext.createGain();
 
-                // High frequencies for glass-like sound
-                oscillator.frequency.setValueAtTime(800 + Math.random() * 1200, now);
-                oscillator.frequency.exponentialRampToValueAtTime(100 + Math.random() * 200, now + 0.3);
+                // Higher frequencies for crisper glass-like sound
+                oscillator.frequency.setValueAtTime(2000 + Math.random() * 2500, now);
+                oscillator.frequency.exponentialRampToValueAtTime(300 + Math.random() * 400, now + 0.15);
 
-                // Fade out quickly
-                gainNode.gain.setValueAtTime(0.05, now);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                // Fade out very quickly for crisp effect
+                gainNode.gain.setValueAtTime(0.04, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
 
-                oscillator.start(now + i * 0.02);
-                oscillator.stop(now + 0.5);
+                oscillator.start(now + i * 0.015);
+                oscillator.stop(now + 0.3);
             }
         }
 
@@ -535,9 +535,14 @@
                     z: targetZ
                 },
                 rotation: {
-                    x: (Math.random() - 0.5) * 0.6,
-                    y: (Math.random() - 0.5) * 0.6,
-                    z: (Math.random() - 0.5) * 0.6
+                    x: (Math.random() - 0.5) * 0.4,
+                    y: (Math.random() - 0.5) * 0.4,
+                    z: (Math.random() - 0.5) * 0.4
+                },
+                rotationSpeed: {
+                    x: (Math.random() - 0.5) * 0.03,
+                    y: (Math.random() - 0.5) * 0.03,
+                    z: (Math.random() - 0.5) * 0.03
                 },
                 sceneIndex: index,
                 hovered: false,
@@ -572,11 +577,17 @@
                     fragment.mesh.position.z = fragment.originalPos.z +
                         (fragment.targetPos.z - fragment.originalPos.z) * eased;
 
-                    fragment.mesh.rotation.x = fragment.rotation.x * eased;
-                    fragment.mesh.rotation.y = fragment.rotation.y * eased;
-                    fragment.mesh.rotation.z = fragment.rotation.z * eased;
+                    // Continuous rotation during shatter animation
+                    fragment.mesh.rotation.x += fragment.rotationSpeed.x;
+                    fragment.mesh.rotation.y += fragment.rotationSpeed.y;
+                    fragment.mesh.rotation.z += fragment.rotationSpeed.z;
 
                     requestAnimationFrame(animate);
+                } else {
+                    // Set final rotation after animation completes
+                    fragment.mesh.rotation.x = fragment.rotation.x;
+                    fragment.mesh.rotation.y = fragment.rotation.y;
+                    fragment.mesh.rotation.z = fragment.rotation.z;
                 }
             }
 

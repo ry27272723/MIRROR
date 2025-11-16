@@ -215,8 +215,19 @@
                 filter: 'sunset',
                 fogColor: 0xf5a962,
                 ambientLight: 0xff9955
+            },
+            {
+                name: 'Crimson Echo',
+                description: 'Deep rose petals fall through time, whispering secrets in burgundy',
+                color: 0x8b2f47,
+                filter: 'crimson',
+                fogColor: 0xc85a72,
+                ambientLight: 0xaa5566
             }
         ];
+
+        // Track completed scenes
+        let completedScenes = new Set();
 
         // Initialize
         function init() {
@@ -254,9 +265,9 @@
             animate();
         }
 
-        // Create the initial mirror
+        // Create the initial mirror (4:3 aspect ratio)
         function createMirror() {
-            const geometry = new THREE.PlaneGeometry(3, 4, 1, 1);
+            const geometry = new THREE.PlaneGeometry(4, 3, 1, 1);
             const material = new THREE.MeshStandardMaterial({
                 color: 0xcccccc,
                 metalness: 1,
@@ -268,7 +279,7 @@
             scene.add(mirror);
 
             // Add frame
-            const frameGeometry = new THREE.PlaneGeometry(3.3, 4.3, 1, 1);
+            const frameGeometry = new THREE.PlaneGeometry(4.3, 3.3, 1, 1);
             const frameMaterial = new THREE.MeshStandardMaterial({
                 color: 0x3a3a3a,
                 metalness: 0.8,
@@ -311,8 +322,8 @@
             fragments.forEach(f => scene.remove(f.mesh));
             fragments = [];
 
-            // Create irregular fragments
-            const fragmentCount = 6;
+            // Create 7 fragments based on SVG
+            const fragmentCount = 7;
 
             for (let i = 0; i < fragmentCount; i++) {
                 const fragment = createFragment(i, fragmentCount);
@@ -334,49 +345,86 @@
             fragments.forEach(f => scene.remove(f.mesh));
             fragments = [];
 
-            // Create irregular fragments
-            const fragmentCount = 6;
+            // Create 7 fragments
+            const fragmentCount = 7;
 
             for (let i = 0; i < fragmentCount; i++) {
                 const fragment = createFragment(i, fragmentCount);
                 fragments.push(fragment);
                 scene.add(fragment.mesh);
 
-                // Set directly to final position (no animation)
-                fragment.mesh.position.set(
-                    fragment.targetPos.x,
-                    fragment.targetPos.y,
-                    fragment.targetPos.z
-                );
-                fragment.mesh.rotation.set(
-                    fragment.rotation.x,
-                    fragment.rotation.y,
-                    fragment.rotation.z
-                );
-            }
-
-            currentState = STATE.FRAGMENTS;
-        }
-
-        // Create an irregular fragment
-        function createFragment(index, total) {
-            // Create irregular shape
-            const shape = new THREE.Shape();
-            const points = 6;
-            const baseRadius = 0.4;
-
-            for (let i = 0; i < points; i++) {
-                const angle = (i / points) * Math.PI * 2;
-                const radius = baseRadius * (0.7 + Math.random() * 0.6);
-                const x = Math.cos(angle) * radius;
-                const y = Math.sin(angle) * radius;
-
-                if (i === 0) {
-                    shape.moveTo(x, y);
+                // If scene is completed, place at original position
+                if (completedScenes.has(fragment.sceneIndex)) {
+                    fragment.mesh.position.set(
+                        fragment.originalPos.x,
+                        fragment.originalPos.y,
+                        fragment.originalPos.z
+                    );
+                    fragment.mesh.rotation.set(0, 0, 0);
+                    fragment.completed = true;
                 } else {
-                    shape.lineTo(x, y);
+                    // Set to scattered position
+                    fragment.mesh.position.set(
+                        fragment.targetPos.x,
+                        fragment.targetPos.y,
+                        fragment.targetPos.z
+                    );
+                    fragment.mesh.rotation.set(
+                        fragment.rotation.x,
+                        fragment.rotation.y,
+                        fragment.rotation.z
+                    );
                 }
             }
+
+            // Check if all scenes completed - restore mirror
+            if (completedScenes.size === scenes.length) {
+                restoreMirror();
+            } else {
+                currentState = STATE.FRAGMENTS;
+            }
+        }
+
+        // SVG fragment path data (from mirror.svg, converted to Three.js coordinates)
+        // SVG is 427x568, mirror is 4x3, centered at 0,0
+        function svgToThree(svgX, svgY) {
+            // Convert SVG coords (0,0 top-left) to Three.js (0,0 center)
+            const x = (svgX / 427) * 4 - 2;
+            const y = -(svgY / 568) * 3 + 1.5;
+            return { x, y };
+        }
+
+        // Create an irregular fragment based on SVG path
+        function createFragment(index, total) {
+            const shape = new THREE.Shape();
+
+            // SVG path data for each of the 7 fragments (simplified points)
+            const fragmentPaths = [
+                // Fragment 0: Bottom-left large piece
+                [[0.5, 428.55], [0.67, 567.43], [198.73, 567.43], [206.53, 533.6], [172.84, 381.9], [206.53, 295.72], [188.92, 279.34], [124.97, 317.09]],
+                // Fragment 1: Bottom-right piece
+                [[425.87, 567.43], [425.87, 537.67], [206.53, 295.72], [172.84, 381.9], [206.53, 533.6], [198.73, 567.43]],
+                // Fragment 2: Right middle-bottom piece
+                [[425.87, 332.16], [321.08, 329.55], [226.39, 295.72], [206.53, 295.72], [425.87, 537.67]],
+                // Fragment 3: Right middle-top piece
+                [[425.87, 95.82], [215.04, 279.36], [206.53, 295.72], [226.39, 295.72], [321.08, 329.55], [425.87, 332.16]],
+                // Fragment 4: Top-right piece
+                [[198.73, 0.5], [226.39, 146.51], [215.04, 279.36], [425.87, 95.82], [425.87, 0.5]],
+                // Fragment 5: Top-left piece
+                [[0.5, 62.11], [86.32, 183.9], [206.53, 295.72], [215.04, 279.36], [226.39, 146.51], [198.73, 0.5], [0.5, 0.5]],
+                // Fragment 6: Left side piece
+                [[0.5, 428.55], [124.97, 317.09], [188.92, 279.34], [86.32, 183.9], [0.5, 62.11]]
+            ];
+
+            const points = fragmentPaths[index];
+            points.forEach((point, i) => {
+                const converted = svgToThree(point[0], point[1]);
+                if (i === 0) {
+                    shape.moveTo(converted.x, converted.y);
+                } else {
+                    shape.lineTo(converted.x, converted.y);
+                }
+            });
             shape.closePath();
 
             const extrudeSettings = {
@@ -398,39 +446,42 @@
 
             const mesh = new THREE.Mesh(geometry, material);
 
-            // Position 6 fragments in a scattered pattern (spreading from center)
-            const positions = [
-                { x: -1.0, y: 1.2 },   // Top left
-                { x: 1.0, y: 1.2 },    // Top right
-                { x: -1.4, y: 0 },     // Middle left
-                { x: 1.4, y: 0 },      // Middle right
-                { x: -1.0, y: -1.2 },  // Bottom left
-                { x: 1.0, y: -1.2 }    // Bottom right
-            ];
+            // Calculate centroid of fragment for positioning
+            let centroidX = 0, centroidY = 0;
+            points.forEach(point => {
+                const converted = svgToThree(point[0], point[1]);
+                centroidX += converted.x;
+                centroidY += converted.y;
+            });
+            centroidX /= points.length;
+            centroidY /= points.length;
 
-            const startPos = positions[index];
-            mesh.position.set(startPos.x, startPos.y, 0);
+            // Start at origin (will look like intact mirror initially)
+            mesh.position.set(0, 0, 0);
 
-            // Target positions spread out moderately
-            const spreadFactor = 2.0;
-            const targetX = startPos.x * spreadFactor + (Math.random() - 0.5) * 0.6;
-            const targetY = startPos.y * spreadFactor + (Math.random() - 0.5) * 0.6;
+            // Target positions spread outward from centroid
+            const spreadFactor = 1.8;
+            const targetX = centroidX * spreadFactor;
+            const targetY = centroidY * spreadFactor;
 
             return {
                 mesh: mesh,
-                originalPos: { x: startPos.x, y: startPos.y, z: 0 },
+                originalPos: { x: 0, y: 0, z: 0 },
+                centroid: { x: centroidX, y: centroidY },
                 targetPos: {
                     x: targetX,
                     y: targetY,
-                    z: (Math.random() - 0.5) * 1.2
+                    z: (Math.random() - 0.5) * 1.0
                 },
                 rotation: {
-                    x: (Math.random() - 0.5) * 0.5,
-                    y: (Math.random() - 0.5) * 0.5,
-                    z: (Math.random() - 0.5) * 0.5
+                    x: (Math.random() - 0.5) * 0.4,
+                    y: (Math.random() - 0.5) * 0.4,
+                    z: (Math.random() - 0.5) * 0.4
                 },
-                sceneIndex: index % scenes.length,
-                hovered: false
+                sceneIndex: index,
+                hovered: false,
+                completed: false,
+                swayPhase: Math.random() * Math.PI * 2
             };
         }
 
@@ -538,12 +589,15 @@
         // Transition from fragment to scene
         function transitionToScene(fragment) {
             if (currentState !== STATE.FRAGMENTS) return;
+            if (fragment.completed) return; // Don't enter completed scenes
 
             currentState = STATE.TRANSITIONING;
             document.body.style.cursor = 'default';
             document.getElementById('fragment-description').classList.remove('visible');
 
             const sceneData = scenes[fragment.sceneIndex];
+            const currentFragmentIndex = fragments.indexOf(fragment);
+
             const duration = 1500;
             const startTime = Date.now();
             const startCameraZ = camera.position.z;
@@ -582,6 +636,7 @@
                     camera.position.set(0, 0, 5);
 
                     currentState = STATE.SCENE;
+                    window.currentSceneIndex = fragment.sceneIndex;
                     document.getElementById('back-button').classList.add('visible');
 
                     const sceneTitle = document.getElementById('scene-title');
@@ -634,6 +689,9 @@
                     break;
                 case 'sunset':
                     createSunsetEnvironment();
+                    break;
+                case 'crimson':
+                    createCrimsonEnvironment();
                     break;
             }
         }
@@ -976,9 +1034,106 @@
             scene.add(orb);
         }
 
+        // Crimson rose environment
+        function createCrimsonEnvironment() {
+            // Falling rose petals
+            for (let i = 0; i < 60; i++) {
+                // Create petal-like shapes using thin triangles
+                const geometry = new THREE.ConeGeometry(0.12, 0.25, 3);
+                const material = new THREE.MeshStandardMaterial({
+                    color: i % 3 === 0 ? 0xa83c58 : (i % 3 === 1 ? 0x8b2f47 : 0xc85a72),
+                    metalness: 0.3,
+                    roughness: 0.5,
+                    transparent: true,
+                    opacity: 0.7 + Math.random() * 0.2,
+                    emissive: 0x5a1a2a,
+                    emissiveIntensity: 0.2
+                });
+                const petal = new THREE.Mesh(geometry, material);
+
+                petal.position.set(
+                    (Math.random() - 0.5) * 18,
+                    (Math.random() - 0.5) * 18,
+                    (Math.random() - 0.5) * 18
+                );
+                petal.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+
+                petal.userData.rotationSpeed = {
+                    x: (Math.random() - 0.5) * 0.008,
+                    y: (Math.random() - 0.5) * 0.008,
+                    z: (Math.random() - 0.5) * 0.008
+                };
+
+                petal.userData.float = {
+                    speed: 0.0002 + Math.random() * 0.0004,
+                    offset: Math.random() * Math.PI * 2,
+                    amplitude: 0.6 + Math.random() * 0.4
+                };
+
+                currentScene.push(petal);
+                scene.add(petal);
+            }
+
+            // Glowing burgundy orbs
+            for (let i = 0; i < 15; i++) {
+                const geometry = new THREE.SphereGeometry(0.1 + Math.random() * 0.1, 16, 16);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0xaa4466,
+                    metalness: 0.6,
+                    roughness: 0.2,
+                    transparent: true,
+                    opacity: 0.5,
+                    emissive: 0x881133,
+                    emissiveIntensity: 0.6
+                });
+                const orb = new THREE.Mesh(geometry, material);
+
+                orb.position.set(
+                    (Math.random() - 0.5) * 15,
+                    (Math.random() - 0.5) * 15,
+                    (Math.random() - 0.5) * 15
+                );
+
+                orb.userData.float = {
+                    speed: 0.0003 + Math.random() * 0.0005,
+                    offset: Math.random() * Math.PI * 2,
+                    amplitude: 0.4 + Math.random() * 0.3
+                };
+
+                orb.userData.pulse = true;
+
+                currentScene.push(orb);
+                scene.add(orb);
+            }
+
+            // Central rose heart
+            const heartGeometry = new THREE.IcosahedronGeometry(1.2, 2);
+            const heartMaterial = new THREE.MeshStandardMaterial({
+                color: 0xa83c58,
+                metalness: 0.5,
+                roughness: 0.3,
+                emissive: 0x8b2f47,
+                emissiveIntensity: 0.4
+            });
+            const heart = new THREE.Mesh(heartGeometry, heartMaterial);
+            heart.userData.rotationSpeed = { x: 0.002, y: 0.004, z: 0.001 };
+            heart.userData.pulse = true;
+            currentScene.push(heart);
+            scene.add(heart);
+        }
+
         // Back button handler
         function onBackClick() {
             if (currentState !== STATE.SCENE) return;
+
+            // Mark current scene as completed
+            if (window.currentSceneIndex !== undefined) {
+                completedScenes.add(window.currentSceneIndex);
+            }
 
             currentState = STATE.TRANSITIONING;
             document.getElementById('back-button').classList.remove('visible');
@@ -1022,24 +1177,89 @@
             fadeOut();
         }
 
+        // Restore complete mirror when all scenes are done
+        function restoreMirror() {
+            currentState = STATE.TRANSITIONING;
+
+            // Animate all fragments back to center
+            const duration = 2000;
+            const startTime = Date.now();
+            const startPositions = fragments.map(f => ({
+                x: f.mesh.position.x,
+                y: f.mesh.position.y,
+                z: f.mesh.position.z,
+                rx: f.mesh.rotation.x,
+                ry: f.mesh.rotation.y,
+                rz: f.mesh.rotation.z
+            }));
+
+            function animateRestore() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = easeInOutCubic(progress);
+
+                fragments.forEach((f, i) => {
+                    const start = startPositions[i];
+                    f.mesh.position.x = start.x * (1 - eased);
+                    f.mesh.position.y = start.y * (1 - eased);
+                    f.mesh.position.z = start.z * (1 - eased);
+                    f.mesh.rotation.x = start.rx * (1 - eased);
+                    f.mesh.rotation.y = start.ry * (1 - eased);
+                    f.mesh.rotation.z = start.rz * (1 - eased);
+                });
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateRestore);
+                } else {
+                    // Remove fragments and show complete mirror
+                    fragments.forEach(f => scene.remove(f.mesh));
+                    fragments = [];
+
+                    createMirror();
+                    currentState = STATE.MIRROR;
+
+                    // Show completion message
+                    document.getElementById('title').textContent = 'All Reflections Restored';
+                    document.getElementById('title').classList.remove('hidden');
+                    document.getElementById('instruction').textContent = 'Click to shatter again';
+                    document.getElementById('instruction').classList.remove('hidden');
+
+                    // Reset completed scenes for replay
+                    completedScenes.clear();
+                }
+            }
+
+            animateRestore();
+        }
+
         // Animation loop
         function animate() {
             requestAnimationFrame(animate);
 
+            const time = Date.now() * 0.001;
+
             // Update fragment hover effects
             if (currentState === STATE.FRAGMENTS) {
                 fragments.forEach(fragment => {
-                    if (fragment.hovered) {
-                        // Glow effect
-                        fragment.mesh.material.emissive.setHex(0x4a90e2);
-                        fragment.mesh.material.emissiveIntensity = 0.5;
+                    if (fragment.completed) {
+                        // Completed fragments have subtle glow
+                        fragment.mesh.material.emissive.setHex(0x88ccff);
+                        fragment.mesh.material.emissiveIntensity = 0.2;
+                    } else if (fragment.hovered) {
+                        // Glow effect - pulsing
+                        fragment.mesh.material.emissive.setHex(0xaaddff);
+                        fragment.mesh.material.emissiveIntensity = 0.5 + Math.sin(time * 3) * 0.2;
 
-                        // Gentle rotation
-                        fragment.mesh.rotation.z += 0.02;
+                        // Gentle sway (left-right tilt)
+                        const swayAmount = 0.08;
+                        fragment.mesh.rotation.z = Math.sin(time * 2 + fragment.swayPhase) * swayAmount;
                     } else {
                         // Reset
                         fragment.mesh.material.emissive.setHex(0x111111);
                         fragment.mesh.material.emissiveIntensity = 0.1;
+
+                        // Return to neutral rotation
+                        fragment.mesh.rotation.z *= 0.9;
                     }
                 });
             }

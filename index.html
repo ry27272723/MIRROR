@@ -118,6 +118,23 @@
             opacity: 1;
         }
 
+        #scene-progress {
+            position: absolute;
+            top: 75px;
+            right: 40px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 1s ease;
+            letter-spacing: 2px;
+            pointer-events: none;
+            font-style: italic;
+        }
+
+        #scene-progress.visible {
+            opacity: 1;
+        }
+
         #fragment-description {
             position: absolute;
             bottom: 80px;
@@ -147,6 +164,7 @@
         <div id="instruction">Click the mirror to shatter it</div>
         <button id="back-button">← Back</button>
         <div id="scene-title" class="scene-title"></div>
+        <div id="scene-progress"></div>
         <div id="fragment-description"></div>
     </div>
 
@@ -229,6 +247,38 @@
         // Track completed scenes
         let completedScenes = new Set();
 
+        // Audio context for sound effects
+        let audioContext;
+
+        // Play shatter sound effect
+        function playShatterSound() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const now = audioContext.currentTime;
+
+            // Create multiple oscillators for glass-like sound
+            for (let i = 0; i < 7; i++) {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                // High frequencies for glass-like sound
+                oscillator.frequency.setValueAtTime(800 + Math.random() * 1200, now);
+                oscillator.frequency.exponentialRampToValueAtTime(100 + Math.random() * 200, now + 0.3);
+
+                // Fade out quickly
+                gainNode.gain.setValueAtTime(0.05, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.start(now + i * 0.02);
+                oscillator.stop(now + 0.5);
+            }
+        }
+
         // Initialize
         function init() {
             // Scene setup
@@ -265,9 +315,9 @@
             animate();
         }
 
-        // Create the initial mirror (4:3 aspect ratio)
+        // Create the initial mirror (3:4 aspect ratio - vertical)
         function createMirror() {
-            const geometry = new THREE.PlaneGeometry(4, 3, 1, 1);
+            const geometry = new THREE.PlaneGeometry(3, 4, 1, 1);
             const material = new THREE.MeshStandardMaterial({
                 color: 0xcccccc,
                 metalness: 1,
@@ -279,7 +329,7 @@
             scene.add(mirror);
 
             // Add frame
-            const frameGeometry = new THREE.PlaneGeometry(4.3, 3.3, 1, 1);
+            const frameGeometry = new THREE.PlaneGeometry(3.3, 4.3, 1, 1);
             const frameMaterial = new THREE.MeshStandardMaterial({
                 color: 0x3a3a3a,
                 metalness: 0.8,
@@ -309,6 +359,9 @@
             currentState = STATE.TRANSITIONING;
             document.getElementById('title').classList.add('hidden');
             document.getElementById('instruction').classList.add('hidden');
+
+            // Play shatter sound
+            playShatterSound();
 
             // Remove original mirror
             scene.remove(mirror);
@@ -386,11 +439,11 @@
         }
 
         // SVG fragment path data (from mirror.svg, converted to Three.js coordinates)
-        // SVG is 427x568, mirror is 4x3, centered at 0,0
+        // SVG is 427x568, mirror is 3x4, centered at 0,0
         function svgToThree(svgX, svgY) {
             // Convert SVG coords (0,0 top-left) to Three.js (0,0 center)
-            const x = (svgX / 427) * 4 - 2;
-            const y = -(svgY / 568) * 3 + 1.5;
+            const x = (svgX / 427) * 3 - 1.5;
+            const y = -(svgY / 568) * 4 + 2;
             return { x, y };
         }
 
@@ -471,12 +524,12 @@
                 targetPos: {
                     x: targetX,
                     y: targetY,
-                    z: (Math.random() - 0.5) * 1.0
+                    z: (Math.random() - 0.5) * 1.2
                 },
                 rotation: {
-                    x: (Math.random() - 0.5) * 0.4,
-                    y: (Math.random() - 0.5) * 0.4,
-                    z: (Math.random() - 0.5) * 0.4
+                    x: (Math.random() - 0.5) * 1.2,  // Increased rotation
+                    y: (Math.random() - 0.5) * 1.2,
+                    z: (Math.random() - 0.5) * 1.2
                 },
                 sceneIndex: index,
                 hovered: false,
@@ -642,6 +695,11 @@
                     const sceneTitle = document.getElementById('scene-title');
                     sceneTitle.textContent = sceneData.name;
                     sceneTitle.classList.add('visible');
+
+                    // Show progress
+                    const sceneProgress = document.getElementById('scene-progress');
+                    sceneProgress.textContent = `已恢复 ${completedScenes.size + 1}/${scenes.length}`;
+                    sceneProgress.classList.add('visible');
                 }
             }
 
@@ -1138,6 +1196,7 @@
             currentState = STATE.TRANSITIONING;
             document.getElementById('back-button').classList.remove('visible');
             document.getElementById('scene-title').classList.remove('visible');
+            document.getElementById('scene-progress').classList.remove('visible');
 
             // Fade out scene
             const duration = 1000;
@@ -1246,9 +1305,9 @@
                         fragment.mesh.material.emissive.setHex(0x88ccff);
                         fragment.mesh.material.emissiveIntensity = 0.2;
                     } else if (fragment.hovered) {
-                        // Glow effect - pulsing
-                        fragment.mesh.material.emissive.setHex(0xaaddff);
-                        fragment.mesh.material.emissiveIntensity = 0.5 + Math.sin(time * 3) * 0.2;
+                        // Static gradient glow (no pulse)
+                        fragment.mesh.material.emissive.setHex(0xccddff);
+                        fragment.mesh.material.emissiveIntensity = 0.4;
 
                         // Gentle sway (left-right tilt)
                         const swayAmount = 0.08;

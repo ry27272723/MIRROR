@@ -528,13 +528,13 @@
             const startX = -rowWidth / 2;
             const baseX = startX + posInRow * spacing;
 
-            // Vertical position
-            const baseY = isTopRow ? 1.2 : -1.2;
+            // Vertical position - increased spacing between rows
+            const baseY = isTopRow ? 2.0 : -2.0;
 
-            // Add random variation
-            const randomX = (Math.random() - 0.5) * 0.4;
-            const randomY = (Math.random() - 0.5) * 0.4;
-            const randomZ = (Math.random() - 0.5) * 0.8;
+            // Add random variation for more uniform scatter
+            const randomX = (Math.random() - 0.5) * 0.8;
+            const randomY = (Math.random() - 0.5) * 0.6;
+            const randomZ = (Math.random() - 0.5) * 1.2;
 
             return {
                 mesh: mesh,
@@ -546,9 +546,9 @@
                     z: randomZ
                 },
                 rotation: {
-                    x: (Math.random() - 0.5) * 1.2,
-                    y: (Math.random() - 0.5) * 1.2,
-                    z: (Math.random() - 0.5) * 1.2
+                    x: 0,
+                    y: 0,
+                    z: 0
                 },
                 sceneIndex: index,
                 hovered: false,

@@ -518,9 +518,11 @@
             mesh.position.set(0, 0, 0);
 
             // Spread fragments outward from their centroid positions
-            const spreadFactor = 2.5;
-            const targetX = centroidX * spreadFactor;
-            const targetY = centroidY * spreadFactor;
+            // Use different spread factors for horizontal and vertical
+            const spreadFactorX = 3.2;  // More horizontal spread
+            const spreadFactorY = 1.6;  // Less vertical spread
+            const targetX = centroidX * spreadFactorX;
+            const targetY = centroidY * spreadFactorY;
             const targetZ = (Math.random() - 0.5) * 1.0;
 
             return {

@@ -184,6 +184,7 @@
         let mirror, fragments = [];
         let currentScene = null;
         let hoveredFragment = null;
+        let initialFragmentData = []; // Store initial fragment configurations
 
         // Scene definitions
         const scenes = [
@@ -383,13 +384,39 @@
             // Create 7 fragments based on SVG
             const fragmentCount = 7;
 
-            for (let i = 0; i < fragmentCount; i++) {
-                const fragment = createFragment(i, fragmentCount);
-                fragments.push(fragment);
-                scene.add(fragment.mesh);
+            // Save initial configuration on first shatter
+            if (initialFragmentData.length === 0) {
+                for (let i = 0; i < fragmentCount; i++) {
+                    const fragment = createFragment(i, fragmentCount);
+                    fragments.push(fragment);
+                    scene.add(fragment.mesh);
 
-                // Animate fragment breaking apart
-                animateFragmentShatter(fragment, i);
+                    // Save the configuration
+                    initialFragmentData.push({
+                        targetPos: { ...fragment.targetPos },
+                        rotation: { ...fragment.rotation },
+                        rotationSpeed: { ...fragment.rotationSpeed }
+                    });
+
+                    // Animate fragment breaking apart
+                    animateFragmentShatter(fragment, i);
+                }
+            } else {
+                // Use saved configuration
+                for (let i = 0; i < fragmentCount; i++) {
+                    const fragment = createFragment(i, fragmentCount);
+
+                    // Override random values with saved ones
+                    fragment.targetPos = { ...initialFragmentData[i].targetPos };
+                    fragment.rotation = { ...initialFragmentData[i].rotation };
+                    fragment.rotationSpeed = { ...initialFragmentData[i].rotationSpeed };
+
+                    fragments.push(fragment);
+                    scene.add(fragment.mesh);
+
+                    // Animate fragment breaking apart
+                    animateFragmentShatter(fragment, i);
+                }
             }
 
             setTimeout(() => {
@@ -408,6 +435,14 @@
 
             for (let i = 0; i < fragmentCount; i++) {
                 const fragment = createFragment(i, fragmentCount);
+
+                // Use saved configuration to maintain consistency
+                if (initialFragmentData[i]) {
+                    fragment.targetPos = { ...initialFragmentData[i].targetPos };
+                    fragment.rotation = { ...initialFragmentData[i].rotation };
+                    fragment.rotationSpeed = { ...initialFragmentData[i].rotationSpeed };
+                }
+
                 fragments.push(fragment);
                 scene.add(fragment.mesh);
 
@@ -419,6 +454,7 @@
                         fragment.originalPos.z
                     );
                     fragment.mesh.rotation.set(0, 0, 0);
+                    fragment.restRotation = { x: 0, y: 0, z: 0 };
                     fragment.completed = true;
                 } else {
                     // Set to scattered position
@@ -1307,8 +1343,9 @@
                     document.getElementById('instruction').textContent = 'Click to shatter again';
                     document.getElementById('instruction').classList.remove('hidden');
 
-                    // Reset completed scenes for replay
+                    // Reset completed scenes and fragment data for replay
                     completedScenes.clear();
+                    initialFragmentData = [];
                 }
             }
 

@@ -512,22 +512,36 @@
             // Start at origin (will look like intact mirror initially)
             mesh.position.set(0, 0, 0);
 
-            // Target positions spread outward from centroid
-            const spreadFactor = 1.8;
-            const targetX = centroidX * spreadFactor;
-            const targetY = centroidY * spreadFactor;
+            // Arrange fragments in two rows (4 on top, 3 on bottom)
+            const isTopRow = index < 4;
+            const posInRow = isTopRow ? index : (index - 4);
+            const rowItemCount = isTopRow ? 4 : 3;
+
+            // Calculate horizontal position with spacing
+            const spacing = 2.2;
+            const rowWidth = (rowItemCount - 1) * spacing;
+            const startX = -rowWidth / 2;
+            const baseX = startX + posInRow * spacing;
+
+            // Vertical position
+            const baseY = isTopRow ? 1.2 : -1.2;
+
+            // Add random variation
+            const randomX = (Math.random() - 0.5) * 0.4;
+            const randomY = (Math.random() - 0.5) * 0.4;
+            const randomZ = (Math.random() - 0.5) * 0.8;
 
             return {
                 mesh: mesh,
                 originalPos: { x: 0, y: 0, z: 0 },
                 centroid: { x: centroidX, y: centroidY },
                 targetPos: {
-                    x: targetX,
-                    y: targetY,
-                    z: (Math.random() - 0.5) * 1.2
+                    x: baseX + randomX,
+                    y: baseY + randomY,
+                    z: randomZ
                 },
                 rotation: {
-                    x: (Math.random() - 0.5) * 1.2,  // Increased rotation
+                    x: (Math.random() - 0.5) * 1.2,
                     y: (Math.random() - 0.5) * 1.2,
                     z: (Math.random() - 0.5) * 1.2
                 },

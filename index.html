@@ -884,7 +884,7 @@
 
                     // Show progress
                     const sceneProgress = document.getElementById('scene-progress');
-                    sceneProgress.textContent = `Restored ${completedScenes.size + 1}/${scenes.length}`;
+                    sceneProgress.textContent = `Collected ${completedScenes.size + 1}/${scenes.length}`;
                     sceneProgress.classList.add('visible');
                 }
             }
@@ -954,13 +954,11 @@
             // Clone the fragment geometry
             const fragmentGeometry = fragment.mesh.geometry.clone();
             const fragmentMaterial = new THREE.MeshStandardMaterial({
-                color: 0xffffff,
-                metalness: 0.8,
-                roughness: 0.2,
-                emissive: sceneData.ambientLight,
-                emissiveIntensity: 0.8,
-                transparent: true,
-                opacity: 0.9
+                color: 0x000000,
+                metalness: 0.9,
+                roughness: 0.1,
+                emissive: 0x000000,
+                emissiveIntensity: 0
             });
 
             sceneFragmentShape = new THREE.Mesh(fragmentGeometry, fragmentMaterial);
@@ -974,7 +972,7 @@
                 Math.sin(angle) * distance
             );
 
-            // Random rotation for visual interest
+            // Fixed rotation - no spinning
             sceneFragmentShape.rotation.set(
                 Math.random() * Math.PI,
                 Math.random() * Math.PI,
@@ -982,11 +980,8 @@
             );
 
             sceneFragmentShape.userData.isFragmentShape = true;
-            sceneFragmentShape.userData.rotationSpeed = {
-                x: (Math.random() - 0.5) * 0.01,
-                y: (Math.random() - 0.5) * 0.01,
-                z: (Math.random() - 0.5) * 0.01
-            };
+            sceneFragmentShape.userData.floatOffset = Math.random() * Math.PI * 2;
+            sceneFragmentShape.userData.baseY = sceneFragmentShape.position.y;
 
             scene.add(sceneFragmentShape);
         }
@@ -1555,15 +1550,10 @@
                     }
                 });
 
-                // Animate fragment shape in scene
-                if (sceneFragmentShape && sceneFragmentShape.userData.rotationSpeed) {
-                    sceneFragmentShape.rotation.x += sceneFragmentShape.userData.rotationSpeed.x;
-                    sceneFragmentShape.rotation.y += sceneFragmentShape.userData.rotationSpeed.y;
-                    sceneFragmentShape.rotation.z += sceneFragmentShape.userData.rotationSpeed.z;
-
-                    // Pulsing glow effect
-                    const pulse = Math.sin(time * 2) * 0.3 + 0.7;
-                    sceneFragmentShape.material.emissiveIntensity = pulse;
+                // Animate fragment shape in scene - only float up and down
+                if (sceneFragmentShape && sceneFragmentShape.userData.floatOffset !== undefined) {
+                    const floatAmount = Math.sin(time * 0.8 + sceneFragmentShape.userData.floatOffset) * 0.3;
+                    sceneFragmentShape.position.y = sceneFragmentShape.userData.baseY + floatAmount;
                 }
             }
 

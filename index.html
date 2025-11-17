@@ -807,6 +807,9 @@
                     camera.position.set(0, 0, 5);
                     camera.lookAt(0, 0, 0);
 
+                    // Re-add film grain filter for fragment selection
+                    document.getElementById('canvas').classList.add('shattered');
+
                     // Recreate fragments instantly
                     recreateFragments();
                 }
@@ -857,6 +860,9 @@
                     // Clear fragments
                     fragments.forEach(f => scene.remove(f.mesh));
                     fragments = [];
+
+                    // Remove film grain filter when entering scene
+                    document.getElementById('canvas').classList.remove('shattered');
 
                     // Create scene
                     createSceneEnvironment(sceneData, fragment);

@@ -22,7 +22,11 @@
             display: block;
             width: 100vw;
             height: 100vh;
-            filter: sepia(0.15) contrast(1.05) brightness(0.98);
+            transition: filter 1s ease;
+        }
+
+        #canvas.shattered {
+            filter: sepia(0.25) contrast(1.15) brightness(0.75);
         }
 
         #ui-overlay {
@@ -170,6 +174,7 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script>
         // State management
         const STATE = {
@@ -185,6 +190,8 @@
         let currentScene = null;
         let hoveredFragment = null;
         let initialFragmentData = []; // Store initial fragment configurations
+        let controls; // OrbitControls for scene navigation
+        let sceneFragmentShape = null; // The clickable fragment shape in the scene
 
         // Scene definitions
         const scenes = [
@@ -365,6 +372,9 @@
             currentState = STATE.TRANSITIONING;
             document.getElementById('title').classList.add('hidden');
             document.getElementById('instruction').classList.add('hidden');
+
+            // Add film grain filter and darken scene
+            document.getElementById('canvas').classList.add('shattered');
 
             // Play shatter sound
             playShatterSound();
@@ -696,7 +706,113 @@
                         transitionToScene(fragment);
                     }
                 }
+            } else if (currentState === STATE.SCENE) {
+                // Check if clicking on fragment shape in scene
+                raycaster.setFromCamera(mouse, camera);
+                if (sceneFragmentShape) {
+                    const intersects = raycaster.intersectObject(sceneFragmentShape);
+                    if (intersects.length > 0) {
+                        onFragmentShapeClicked();
+                    }
+                }
             }
+        }
+
+        // Handle clicking fragment shape in scene
+        function onFragmentShapeClicked() {
+            if (currentState !== STATE.SCENE) return;
+
+            // Mark scene as completed
+            completedScenes.add(window.currentSceneIndex);
+
+            // Disable controls
+            if (controls) {
+                controls.enabled = false;
+            }
+
+            // Zoom to fragment with animation
+            const duration = 1000;
+            const startTime = Date.now();
+            const startPos = camera.position.clone();
+            const targetPos = sceneFragmentShape.position.clone();
+            targetPos.z += 2; // Move camera closer
+
+            function zoomToFragment() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = easeInOutCubic(progress);
+
+                camera.position.lerpVectors(startPos, targetPos, eased);
+                camera.lookAt(sceneFragmentShape.position);
+
+                if (progress < 1) {
+                    requestAnimationFrame(zoomToFragment);
+                } else {
+                    // After zoom, return to fragment selection
+                    setTimeout(() => {
+                        returnToFragmentSelection();
+                    }, 500);
+                }
+            }
+
+            zoomToFragment();
+        }
+
+        // Return to fragment selection from scene
+        function returnToFragmentSelection() {
+            currentState = STATE.TRANSITIONING;
+            document.getElementById('back-button').classList.remove('visible');
+            document.getElementById('scene-title').classList.remove('visible');
+            document.getElementById('scene-progress').classList.remove('visible');
+
+            // Fade out scene
+            const duration = 1000;
+            const startTime = Date.now();
+
+            function fadeOut() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                if (currentScene) {
+                    currentScene.forEach(obj => {
+                        if (obj.material) {
+                            obj.material.transparent = true;
+                            obj.material.opacity = 1 - progress;
+                        }
+                    });
+                }
+
+                if (sceneFragmentShape) {
+                    sceneFragmentShape.material.opacity = 0.9 * (1 - progress);
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(fadeOut);
+                } else {
+                    // Clear scene
+                    if (currentScene) {
+                        currentScene.forEach(obj => scene.remove(obj));
+                        currentScene = null;
+                    }
+                    if (sceneFragmentShape) {
+                        scene.remove(sceneFragmentShape);
+                        sceneFragmentShape = null;
+                    }
+
+                    // Reset scene
+                    scene.background = null;
+                    scene.fog = new THREE.Fog(0x3a4a5e, 10, 50);
+
+                    // Reset camera
+                    camera.position.set(0, 0, 5);
+                    camera.lookAt(0, 0, 0);
+
+                    // Recreate fragments instantly
+                    recreateFragments();
+                }
+            }
+
+            fadeOut();
         }
 
         // Transition from fragment to scene
@@ -743,10 +859,20 @@
                     fragments = [];
 
                     // Create scene
-                    createSceneEnvironment(sceneData);
+                    createSceneEnvironment(sceneData, fragment);
 
                     // Reset camera
                     camera.position.set(0, 0, 5);
+
+                    // Enable OrbitControls for looking around
+                    if (!controls) {
+                        controls = new THREE.OrbitControls(camera, renderer.domElement);
+                    }
+                    controls.enabled = true;
+                    controls.enableDamping = true;
+                    controls.dampingFactor = 0.05;
+                    controls.minDistance = 3;
+                    controls.maxDistance = 10;
 
                     currentState = STATE.SCENE;
                     window.currentSceneIndex = fragment.sceneIndex;
@@ -767,12 +893,18 @@
         }
 
         // Create a scene environment
-        function createSceneEnvironment(sceneData) {
+        function createSceneEnvironment(sceneData, fragment) {
             // Clear previous scene
             if (currentScene) {
                 currentScene.forEach(obj => scene.remove(obj));
             }
             currentScene = [];
+
+            // Clear previous fragment shape
+            if (sceneFragmentShape) {
+                scene.remove(sceneFragmentShape);
+                sceneFragmentShape = null;
+            }
 
             // Update fog and background
             scene.fog = new THREE.Fog(sceneData.fogColor, 5, 30);
@@ -787,6 +919,9 @@
             directionalLight.position.set(5, 5, 5);
             currentScene.push(directionalLight);
             scene.add(directionalLight);
+
+            // Create glowing clickable fragment shape in the scene
+            createSceneFragmentShape(fragment, sceneData);
 
             // Create environment based on filter type
             switch(sceneData.filter) {
@@ -812,6 +947,48 @@
                     createCrimsonEnvironment();
                     break;
             }
+        }
+
+        // Create clickable fragment shape in the scene
+        function createSceneFragmentShape(fragment, sceneData) {
+            // Clone the fragment geometry
+            const fragmentGeometry = fragment.mesh.geometry.clone();
+            const fragmentMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.8,
+                roughness: 0.2,
+                emissive: sceneData.ambientLight,
+                emissiveIntensity: 0.8,
+                transparent: true,
+                opacity: 0.9
+            });
+
+            sceneFragmentShape = new THREE.Mesh(fragmentGeometry, fragmentMaterial);
+
+            // Position fragment shape in the scene (floating in space)
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 3 + Math.random() * 2;
+            sceneFragmentShape.position.set(
+                Math.cos(angle) * distance,
+                (Math.random() - 0.5) * 3,
+                Math.sin(angle) * distance
+            );
+
+            // Random rotation for visual interest
+            sceneFragmentShape.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI
+            );
+
+            sceneFragmentShape.userData.isFragmentShape = true;
+            sceneFragmentShape.userData.rotationSpeed = {
+                x: (Math.random() - 0.5) * 0.01,
+                y: (Math.random() - 0.5) * 0.01,
+                z: (Math.random() - 0.5) * 0.01
+            };
+
+            scene.add(sceneFragmentShape);
         }
 
         // Cold blue ice environment
@@ -849,19 +1026,20 @@
                 scene.add(crystal);
             }
 
-            // Central frozen orb
-            const orbGeometry = new THREE.IcosahedronGeometry(1, 1);
-            const orbMaterial = new THREE.MeshStandardMaterial({
+            // Central frozen star
+            const starGeometry = new THREE.DodecahedronGeometry(1.3, 0);
+            const starMaterial = new THREE.MeshStandardMaterial({
                 color: 0x6ba3d4,
                 metalness: 0.9,
                 roughness: 0.1,
                 emissive: 0x2a5a7a,
-                emissiveIntensity: 0.3
+                emissiveIntensity: 0.4
             });
-            const orb = new THREE.Mesh(orbGeometry, orbMaterial);
-            orb.userData.rotationSpeed = { x: 0.002, y: 0.005, z: 0.001 };
-            currentScene.push(orb);
-            scene.add(orb);
+            const star = new THREE.Mesh(starGeometry, starMaterial);
+            star.userData.rotationSpeed = { x: 0.003, y: 0.006, z: 0.002 };
+            star.userData.pulse = true;
+            currentScene.push(star);
+            scene.add(star);
         }
 
         // Warm vintage environment
@@ -897,19 +1075,20 @@
                 scene.add(ring);
             }
 
-            // Central warm sphere
-            const sphereGeometry = new THREE.SphereGeometry(1.2, 32, 32);
-            const sphereMaterial = new THREE.MeshStandardMaterial({
+            // Central warm diamond/octahedron
+            const diamondGeometry = new THREE.OctahedronGeometry(1.5, 0);
+            const diamondMaterial = new THREE.MeshStandardMaterial({
                 color: 0xf5c77e,
-                metalness: 0.5,
-                roughness: 0.5,
+                metalness: 0.7,
+                roughness: 0.3,
                 emissive: 0xe8a735,
-                emissiveIntensity: 0.2
+                emissiveIntensity: 0.3
             });
-            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.userData.pulse = true;
-            currentScene.push(sphere);
-            scene.add(sphere);
+            const diamond = new THREE.Mesh(diamondGeometry, diamondMaterial);
+            diamond.userData.rotationSpeed = { x: 0.002, y: 0.004, z: 0.001 };
+            diamond.userData.pulse = true;
+            currentScene.push(diamond);
+            scene.add(diamond);
         }
 
         // Film noir environment
@@ -1052,20 +1231,20 @@
                 scene.add(leaf);
             }
 
-            // Central organic sphere with texture
-            const sphereGeometry = new THREE.IcosahedronGeometry(1.3, 2);
-            const sphereMaterial = new THREE.MeshStandardMaterial({
+            // Central organic tetrahedron (pyramid)
+            const pyramidGeometry = new THREE.TetrahedronGeometry(1.6, 0);
+            const pyramidMaterial = new THREE.MeshStandardMaterial({
                 color: 0x48a562,
-                metalness: 0.3,
-                roughness: 0.6,
+                metalness: 0.4,
+                roughness: 0.5,
                 emissive: 0x2d5a3f,
-                emissiveIntensity: 0.3
+                emissiveIntensity: 0.4
             });
-            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            sphere.userData.rotationSpeed = { x: 0.001, y: 0.003, z: 0.002 };
-            sphere.userData.pulse = true;
-            currentScene.push(sphere);
-            scene.add(sphere);
+            const pyramid = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
+            pyramid.userData.rotationSpeed = { x: 0.002, y: 0.003, z: 0.001 };
+            pyramid.userData.pulse = true;
+            currentScene.push(pyramid);
+            scene.add(pyramid);
         }
 
         // Amber sunset environment
@@ -1136,20 +1315,20 @@
                 scene.add(ring);
             }
 
-            // Central sunset orb
-            const orbGeometry = new THREE.SphereGeometry(1.4, 32, 32);
-            const orbMaterial = new THREE.MeshStandardMaterial({
+            // Central sunset cone/crystal
+            const coneGeometry = new THREE.ConeGeometry(1.2, 2.5, 6);
+            const coneMaterial = new THREE.MeshStandardMaterial({
                 color: 0xff9955,
-                metalness: 0.4,
-                roughness: 0.3,
+                metalness: 0.6,
+                roughness: 0.2,
                 emissive: 0xff7733,
-                emissiveIntensity: 0.5
+                emissiveIntensity: 0.6
             });
-            const orb = new THREE.Mesh(orbGeometry, orbMaterial);
-            orb.userData.rotationSpeed = { x: 0.002, y: 0.004, z: 0.001 };
-            orb.userData.pulse = true;
-            currentScene.push(orb);
-            scene.add(orb);
+            const cone = new THREE.Mesh(coneGeometry, coneMaterial);
+            cone.userData.rotationSpeed = { x: 0.001, y: 0.005, z: 0.001 };
+            cone.userData.pulse = true;
+            currentScene.push(cone);
+            scene.add(cone);
         }
 
         // Crimson rose environment
@@ -1228,72 +1407,33 @@
                 scene.add(orb);
             }
 
-            // Central rose heart
-            const heartGeometry = new THREE.IcosahedronGeometry(1.2, 2);
-            const heartMaterial = new THREE.MeshStandardMaterial({
+            // Central rose knot
+            const knotGeometry = new THREE.TorusKnotGeometry(0.8, 0.3, 100, 16);
+            const knotMaterial = new THREE.MeshStandardMaterial({
                 color: 0xa83c58,
-                metalness: 0.5,
-                roughness: 0.3,
+                metalness: 0.6,
+                roughness: 0.2,
                 emissive: 0x8b2f47,
-                emissiveIntensity: 0.4
+                emissiveIntensity: 0.5
             });
-            const heart = new THREE.Mesh(heartGeometry, heartMaterial);
-            heart.userData.rotationSpeed = { x: 0.002, y: 0.004, z: 0.001 };
-            heart.userData.pulse = true;
-            currentScene.push(heart);
-            scene.add(heart);
+            const knot = new THREE.Mesh(knotGeometry, knotMaterial);
+            knot.userData.rotationSpeed = { x: 0.003, y: 0.005, z: 0.002 };
+            knot.userData.pulse = true;
+            currentScene.push(knot);
+            scene.add(knot);
         }
 
-        // Back button handler
+        // Back button handler - return without completing scene
         function onBackClick() {
             if (currentState !== STATE.SCENE) return;
 
-            // Mark current scene as completed
-            if (window.currentSceneIndex !== undefined) {
-                completedScenes.add(window.currentSceneIndex);
+            // Disable controls
+            if (controls) {
+                controls.enabled = false;
             }
 
-            currentState = STATE.TRANSITIONING;
-            document.getElementById('back-button').classList.remove('visible');
-            document.getElementById('scene-title').classList.remove('visible');
-            document.getElementById('scene-progress').classList.remove('visible');
-
-            // Fade out scene
-            const duration = 1000;
-            const startTime = Date.now();
-
-            function fadeOut() {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-
-                if (currentScene) {
-                    currentScene.forEach(obj => {
-                        if (obj.material) {
-                            obj.material.transparent = true;
-                            obj.material.opacity = 1 - progress;
-                        }
-                    });
-                }
-
-                if (progress < 1) {
-                    requestAnimationFrame(fadeOut);
-                } else {
-                    // Clear scene
-                    if (currentScene) {
-                        currentScene.forEach(obj => scene.remove(obj));
-                        currentScene = null;
-                    }
-
-                    // Reset scene
-                    scene.background = null;
-                    scene.fog = new THREE.Fog(0x3a4a5e, 10, 50);
-
-                    // Recreate fragments instantly
-                    recreateFragments();
-                }
-            }
-
-            fadeOut();
+            // Return to fragment selection without completing
+            returnToFragmentSelection();
         }
 
         // Restore complete mirror when all scenes are done
@@ -1336,6 +1476,9 @@
 
                     createMirror();
                     currentState = STATE.MIRROR;
+
+                    // Remove film grain filter
+                    document.getElementById('canvas').classList.remove('shattered');
 
                     // Show completion message
                     document.getElementById('title').textContent = 'All Reflections Restored';
@@ -1411,6 +1554,22 @@
                         obj.scale.set(scale, scale, scale);
                     }
                 });
+
+                // Animate fragment shape in scene
+                if (sceneFragmentShape && sceneFragmentShape.userData.rotationSpeed) {
+                    sceneFragmentShape.rotation.x += sceneFragmentShape.userData.rotationSpeed.x;
+                    sceneFragmentShape.rotation.y += sceneFragmentShape.userData.rotationSpeed.y;
+                    sceneFragmentShape.rotation.z += sceneFragmentShape.userData.rotationSpeed.z;
+
+                    // Pulsing glow effect
+                    const pulse = Math.sin(time * 2) * 0.3 + 0.7;
+                    sceneFragmentShape.material.emissiveIntensity = pulse;
+                }
+            }
+
+            // Update OrbitControls
+            if (controls && controls.enabled) {
+                controls.update();
             }
 
             // Gentle mirror rotation in initial state

@@ -411,14 +411,18 @@
             if (currentState !== STATE.MIRROR) return;
 
             currentState = STATE.TRANSITIONING;
+
+            // Hide title and instruction first
             document.getElementById('title').classList.add('hidden');
             document.getElementById('instruction').classList.add('hidden');
 
             // Add film grain filter and darken scene
             document.getElementById('canvas').classList.add('shattered');
 
-            // Show finding text
-            document.getElementById('finding-text').classList.add('visible');
+            // Wait 2 seconds, then show finding text
+            setTimeout(() => {
+                document.getElementById('finding-text').classList.add('visible');
+            }, 2000);
 
             // Play shatter sound
             playShatterSound();
@@ -439,10 +443,10 @@
                 if (progress < 1) {
                     requestAnimationFrame(cameraZoom);
                 } else {
-                    // Hide finding text after animation
+                    // Hide finding text after it's been shown for 1 second
                     setTimeout(() => {
                         document.getElementById('finding-text').classList.remove('visible');
-                    }, 1000);
+                    }, 3000); // 2s delay + 1s display
                 }
             }
 

@@ -126,6 +126,25 @@
             opacity: 1;
         }
 
+        #scene-hint {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 18px;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1s ease;
+            letter-spacing: 2px;
+            font-style: italic;
+        }
+
+        #scene-hint.visible {
+            opacity: 1;
+        }
+
         .scene-title {
             position: absolute;
             top: 40px;
@@ -191,6 +210,7 @@
         <button id="back-button">← Back</button>
         <div id="scene-title" class="scene-title"></div>
         <div id="scene-progress"></div>
+        <div id="scene-hint">Find and click the fragment to collect it</div>
         <div id="fragment-description"></div>
     </div>
 
@@ -729,10 +749,12 @@
                         hoveredFragment = fragment;
                         document.body.style.cursor = 'pointer';
 
-                        // Show scene description
-                        const sceneData = scenes[fragment.sceneIndex];
-                        descriptionElement.textContent = sceneData.description;
-                        descriptionElement.classList.add('visible');
+                        // Show scene description only for uncompleted fragments
+                        if (!fragment.completed) {
+                            const sceneData = scenes[fragment.sceneIndex];
+                            descriptionElement.textContent = sceneData.description;
+                            descriptionElement.classList.add('visible');
+                        }
                     }
                 } else {
                     document.body.style.cursor = 'default';
@@ -813,6 +835,7 @@
             document.getElementById('back-button').classList.remove('visible');
             document.getElementById('scene-title').classList.remove('visible');
             document.getElementById('scene-progress').classList.remove('visible');
+            document.getElementById('scene-hint').classList.remove('visible');
 
             // Fade out scene
             const duration = 1000;
@@ -941,6 +964,9 @@
                     const sceneProgress = document.getElementById('scene-progress');
                     sceneProgress.textContent = `Collected ${completedScenes.size + 1}/${scenes.length}`;
                     sceneProgress.classList.add('visible');
+
+                    // Show scene hint
+                    document.getElementById('scene-hint').classList.add('visible');
                 }
             }
 

@@ -106,6 +106,26 @@
             opacity: 0;
         }
 
+        #finding-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 32px;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1s ease;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            letter-spacing: 3px;
+            font-style: italic;
+        }
+
+        #finding-text.visible {
+            opacity: 1;
+        }
+
         .scene-title {
             position: absolute;
             top: 40px;
@@ -167,6 +187,7 @@
     <div id="ui-overlay">
         <div id="title">The Shattered Mirror</div>
         <div id="instruction">Click the mirror to shatter it</div>
+        <div id="finding-text">Finding, bringing back lost pieces</div>
         <button id="back-button">← Back</button>
         <div id="scene-title" class="scene-title"></div>
         <div id="scene-progress"></div>
@@ -376,8 +397,36 @@
             // Add film grain filter and darken scene
             document.getElementById('canvas').classList.add('shattered');
 
+            // Show finding text
+            document.getElementById('finding-text').classList.add('visible');
+
             // Play shatter sound
             playShatterSound();
+
+            // Camera zoom in animation
+            const duration = 1500;
+            const startTime = Date.now();
+            const startZ = camera.position.z;
+            const targetZ = 4; // Move camera closer
+
+            function cameraZoom() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = easeInOutCubic(progress);
+
+                camera.position.z = startZ + (targetZ - startZ) * eased;
+
+                if (progress < 1) {
+                    requestAnimationFrame(cameraZoom);
+                } else {
+                    // Hide finding text after animation
+                    setTimeout(() => {
+                        document.getElementById('finding-text').classList.remove('visible');
+                    }, 1000);
+                }
+            }
+
+            cameraZoom();
 
             // Remove original mirror
             scene.remove(mirror);
@@ -957,8 +1006,10 @@
 
         // Create clickable fragment shape in the scene
         function createSceneFragmentShape(fragment, sceneData) {
-            // Clone the fragment geometry
+            // Clone the fragment geometry and scale it down
             const fragmentGeometry = fragment.mesh.geometry.clone();
+
+            // Black material for the core
             const fragmentMaterial = new THREE.MeshStandardMaterial({
                 color: 0x000000,
                 metalness: 0.9,
@@ -969,12 +1020,15 @@
 
             sceneFragmentShape = new THREE.Mesh(fragmentGeometry, fragmentMaterial);
 
-            // Position fragment shape in the scene (floating in space)
+            // Make it smaller
+            sceneFragmentShape.scale.set(0.4, 0.4, 0.4);
+
+            // Position fragment shape farther away in the scene
             const angle = Math.random() * Math.PI * 2;
-            const distance = 3 + Math.random() * 2;
+            const distance = 6 + Math.random() * 4; // Farther: 6-10 units away
             sceneFragmentShape.position.set(
                 Math.cos(angle) * distance,
-                (Math.random() - 0.5) * 3,
+                (Math.random() - 0.5) * 5,
                 Math.sin(angle) * distance
             );
 
@@ -988,6 +1042,24 @@
             sceneFragmentShape.userData.isFragmentShape = true;
             sceneFragmentShape.userData.floatOffset = Math.random() * Math.PI * 2;
             sceneFragmentShape.userData.baseY = sceneFragmentShape.position.y;
+
+            // Create glowing outline using a wireframe
+            const outlineGeometry = fragmentGeometry.clone();
+            const outlineMaterial = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.6,
+                wireframe: true,
+                wireframeLinewidth: 2
+            });
+            const outline = new THREE.Mesh(outlineGeometry, outlineMaterial);
+            outline.scale.set(1.05, 1.05, 1.05); // Slightly larger for outline effect
+            sceneFragmentShape.add(outline);
+
+            // Add point light for glow effect
+            const glowLight = new THREE.PointLight(0xffffff, 1, 3);
+            glowLight.position.set(0, 0, 0);
+            sceneFragmentShape.add(glowLight);
 
             scene.add(sceneFragmentShape);
         }
@@ -1453,11 +1525,16 @@
                 rz: f.mesh.rotation.z
             }));
 
+            // Camera animation back to original position
+            const startCameraZ = camera.position.z;
+            const targetCameraZ = 5;
+
             function animateRestore() {
                 const elapsed = Date.now() - startTime;
                 const progress = Math.min(elapsed / duration, 1);
                 const eased = easeInOutCubic(progress);
 
+                // Animate fragments
                 fragments.forEach((f, i) => {
                     const start = startPositions[i];
                     f.mesh.position.x = start.x * (1 - eased);
@@ -1467,6 +1544,9 @@
                     f.mesh.rotation.y = start.ry * (1 - eased);
                     f.mesh.rotation.z = start.rz * (1 - eased);
                 });
+
+                // Animate camera zoom out
+                camera.position.z = startCameraZ + (targetCameraZ - startCameraZ) * eased;
 
                 if (progress < 1) {
                     requestAnimationFrame(animateRestore);
@@ -1478,7 +1558,7 @@
                     createMirror();
                     currentState = STATE.MIRROR;
 
-                    // Remove film grain filter
+                    // Remove film grain filter - background becomes bright again
                     document.getElementById('canvas').classList.remove('shattered');
 
                     // Show completion message
@@ -1506,9 +1586,9 @@
             if (currentState === STATE.FRAGMENTS) {
                 fragments.forEach(fragment => {
                     if (fragment.completed) {
-                        // Completed fragments have subtle glow
-                        fragment.mesh.material.emissive.setHex(0x88ccff);
-                        fragment.mesh.material.emissiveIntensity = 0.2;
+                        // Completed fragments glow brightly
+                        fragment.mesh.material.emissive.setHex(0xffffff);
+                        fragment.mesh.material.emissiveIntensity = 0.5 + Math.sin(time * 3) * 0.3; // Pulsing glow
                     } else if (fragment.hovered) {
                         // Static gradient glow (no pulse)
                         fragment.mesh.material.emissive.setHex(0xccddff);

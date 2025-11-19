@@ -1145,39 +1145,39 @@
             scene.add(star);
         }
 
-        // Golden Hours - ribbons of light
+        // Golden Hours - golden particles
         function createWarmEnvironment() {
-            // Floating golden ribbons
-            for (let i = 0; i < 25; i++) {
-                const curve = new THREE.CatmullRomCurve3([
-                    new THREE.Vector3((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3),
-                    new THREE.Vector3((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3),
-                    new THREE.Vector3((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3)
-                ]);
-                const geometry = new THREE.TubeGeometry(curve, 20, 0.05, 8, false);
+            // Floating golden particles with glow
+            for (let i = 0; i < 80; i++) {
+                const size = 0.08 + Math.random() * 0.15;
+                const geometry = new THREE.SphereGeometry(size, 12, 12);
                 const material = new THREE.MeshStandardMaterial({
-                    color: 0xffd700,
-                    metalness: 0.8,
+                    color: i % 3 === 0 ? 0xffd700 : (i % 3 === 1 ? 0xffb347 : 0xffc870),
+                    metalness: 0.7,
                     roughness: 0.2,
-                    emissive: 0xe8a735,
-                    emissiveIntensity: 0.4
+                    transparent: true,
+                    opacity: 0.8 + Math.random() * 0.2,
+                    emissive: i % 3 === 0 ? 0xe8a735 : (i % 3 === 1 ? 0xd4941b : 0xffa500),
+                    emissiveIntensity: 0.6 + Math.random() * 0.4
                 });
-                const ribbon = new THREE.Mesh(geometry, material);
+                const particle = new THREE.Mesh(geometry, material);
 
-                ribbon.position.set(
-                    (Math.random() - 0.5) * 15,
-                    (Math.random() - 0.5) * 15,
-                    (Math.random() - 0.5) * 15
+                particle.position.set(
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 20,
+                    (Math.random() - 0.5) * 20
                 );
 
-                ribbon.userData.rotationSpeed = {
-                    x: (Math.random() - 0.5) * 0.005,
-                    y: (Math.random() - 0.5) * 0.005,
-                    z: (Math.random() - 0.5) * 0.005
+                particle.userData.float = {
+                    speed: 0.0003 + Math.random() * 0.0005,
+                    offset: Math.random() * Math.PI * 2,
+                    amplitude: 0.5 + Math.random() * 0.5
                 };
 
-                currentScene.push(ribbon);
-                scene.add(ribbon);
+                particle.userData.pulse = true;
+
+                currentScene.push(particle);
+                scene.add(particle);
             }
 
             // Central warm diamond/octahedron
@@ -1422,30 +1422,49 @@
             scene.add(orbitSphere);
         }
 
-        // Echo - green rings and waves
+        // Echo - green particle waves
         function createEchoEnvironment() {
-            // Expanding ring waves
-            for (let i = 0; i < 12; i++) {
-                const geometry = new THREE.TorusGeometry(1.5 + i * 0.4, 0.08, 8, 32);
-                const material = new THREE.MeshStandardMaterial({
-                    color: 0x48a562,
-                    metalness: 0.5,
-                    roughness: 0.4,
-                    transparent: true,
-                    opacity: 0.6 - i * 0.04,
-                    emissive: 0x2d8659,
-                    emissiveIntensity: 0.4 - i * 0.03
-                });
-                const ring = new THREE.Mesh(geometry, material);
+            // Create expanding particle wave rings (10 layers)
+            for (let layer = 0; layer < 10; layer++) {
+                const baseRadius = 1.5 + layer * 0.5;
+                const particlesInRing = 24 + layer * 4; // More particles in outer rings
+                const layerOpacity = 0.8 - layer * 0.06;
+                const layerEmissive = 0.6 - layer * 0.05;
 
-                ring.rotation.x = Math.PI / 2;
-                ring.position.y = i * 0.2 - 1.2;
-                ring.userData.expandSpeed = 0.002;
-                ring.userData.isWave = true;
-                ring.userData.waveIndex = i;
+                // Create circular arrangement of particles for this wave layer
+                for (let p = 0; p < particlesInRing; p++) {
+                    const angle = (p / particlesInRing) * Math.PI * 2;
+                    const size = 0.06 + Math.random() * 0.08;
 
-                currentScene.push(ring);
-                scene.add(ring);
+                    const geometry = new THREE.SphereGeometry(size, 8, 8);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: layer % 2 === 0 ? 0x48a562 : 0x5db36e,
+                        metalness: 0.6,
+                        roughness: 0.3,
+                        transparent: true,
+                        opacity: layerOpacity,
+                        emissive: 0x2d8659,
+                        emissiveIntensity: layerEmissive
+                    });
+                    const particle = new THREE.Mesh(geometry, material);
+
+                    // Position in circular pattern
+                    particle.position.set(
+                        Math.cos(angle) * baseRadius,
+                        layer * 0.15 - 0.75,
+                        Math.sin(angle) * baseRadius
+                    );
+
+                    // Wave animation data
+                    particle.userData.waveRing = true;
+                    particle.userData.waveLayer = layer;
+                    particle.userData.waveAngle = angle;
+                    particle.userData.baseRadius = baseRadius;
+                    particle.userData.baseY = particle.position.y;
+
+                    currentScene.push(particle);
+                    scene.add(particle);
+                }
             }
 
             // Floating green particles
@@ -1641,10 +1660,22 @@
                         obj.position.z = Math.sin(orbitAngle) * 2;
                     }
 
-                    // Wave rings (for Echo scene)
-                    if (obj.userData.isWave) {
-                        const waveScale = 1 + Math.sin(time * 2 + obj.userData.waveIndex * 0.5) * 0.1;
-                        obj.scale.set(waveScale, 1, waveScale);
+                    // Wave ring particles (for Echo scene)
+                    if (obj.userData.waveRing) {
+                        // Create ripple effect - particles oscillate up/down with phase delay
+                        const wavePhase = time * 2 + obj.userData.waveLayer * 0.3;
+                        const verticalWave = Math.sin(wavePhase + obj.userData.waveAngle * 2) * 0.2;
+                        obj.position.y = obj.userData.baseY + verticalWave;
+
+                        // Slight radial expansion/contraction
+                        const radiusWave = 1 + Math.sin(wavePhase) * 0.08;
+                        const newRadius = obj.userData.baseRadius * radiusWave;
+                        obj.position.x = Math.cos(obj.userData.waveAngle) * newRadius;
+                        obj.position.z = Math.sin(obj.userData.waveAngle) * newRadius;
+
+                        // Subtle pulse
+                        const pulseScale = 1 + Math.sin(wavePhase * 1.5) * 0.15;
+                        obj.scale.set(pulseScale, pulseScale, pulseScale);
                     }
                 });
 

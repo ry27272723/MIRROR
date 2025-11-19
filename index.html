@@ -210,7 +210,7 @@
         <button id="back-button">← Back</button>
         <div id="scene-title" class="scene-title"></div>
         <div id="scene-progress"></div>
-        <div id="scene-hint">Find and click the fragment to collect it</div>
+        <div id="scene-hint">Drag to explore, bring back the mirror shards</div>
         <div id="fragment-description"></div>
     </div>
 
@@ -419,10 +419,10 @@
             // Add film grain filter and darken scene
             document.getElementById('canvas').classList.add('shattered');
 
-            // Wait 2 seconds, then show finding text
+            // Wait 1 second, then show finding text
             setTimeout(() => {
                 document.getElementById('finding-text').classList.add('visible');
-            }, 2000);
+            }, 1000);
 
             // Play shatter sound
             playShatterSound();
@@ -446,7 +446,7 @@
                     // Hide finding text after it's been shown for 1 second
                     setTimeout(() => {
                         document.getElementById('finding-text').classList.remove('visible');
-                    }, 3000); // 2s delay + 1s display
+                    }, 2000); // 1s delay + 1s display
                 }
             }
 
@@ -966,7 +966,7 @@
 
                     // Show progress
                     const sceneProgress = document.getElementById('scene-progress');
-                    sceneProgress.textContent = `Collected ${completedScenes.size + 1}/${scenes.length}`;
+                    sceneProgress.textContent = `Collected ${completedScenes.size}/${scenes.length}`;
                     sceneProgress.classList.add('visible');
 
                     // Show scene hint

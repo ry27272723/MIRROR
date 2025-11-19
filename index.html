@@ -202,6 +202,9 @@
     </style>
 </head>
 <body>
+    <audio id="bgm" loop>
+        <source src="bgm.mp3" type="audio/mpeg">
+    </audio>
     <canvas id="canvas"></canvas>
     <div id="ui-overlay">
         <div id="title">The Shattered Mirror</div>
@@ -411,6 +414,11 @@
             if (currentState !== STATE.MIRROR) return;
 
             currentState = STATE.TRANSITIONING;
+
+            // Play background music (user interaction allows autoplay)
+            const bgm = document.getElementById('bgm');
+            bgm.volume = 0.4; // Set volume to 40%
+            bgm.play().catch(err => console.log('BGM autoplay prevented:', err));
 
             // Hide title and instruction first
             document.getElementById('title').classList.add('hidden');
@@ -1179,21 +1187,6 @@
                 currentScene.push(particle);
                 scene.add(particle);
             }
-
-            // Central warm diamond/octahedron
-            const diamondGeometry = new THREE.OctahedronGeometry(1.5, 0);
-            const diamondMaterial = new THREE.MeshStandardMaterial({
-                color: 0xf5c77e,
-                metalness: 0.7,
-                roughness: 0.3,
-                emissive: 0xe8a735,
-                emissiveIntensity: 0.3
-            });
-            const diamond = new THREE.Mesh(diamondGeometry, diamondMaterial);
-            diamond.userData.rotationSpeed = { x: 0.002, y: 0.004, z: 0.001 };
-            diamond.userData.pulse = true;
-            currentScene.push(diamond);
-            scene.add(diamond);
         }
 
         // Film noir environment
@@ -1424,12 +1417,12 @@
 
         // Echo - green particle waves
         function createEchoEnvironment() {
-            // Create expanding particle wave rings (10 layers)
-            for (let layer = 0; layer < 10; layer++) {
-                const baseRadius = 1.5 + layer * 0.5;
-                const particlesInRing = 24 + layer * 4; // More particles in outer rings
-                const layerOpacity = 0.8 - layer * 0.06;
-                const layerEmissive = 0.6 - layer * 0.05;
+            // Create expanding particle wave rings (5 layers with larger spacing)
+            for (let layer = 0; layer < 5; layer++) {
+                const baseRadius = 2 + layer * 1.2; // Larger spacing between rings
+                const particlesInRing = 28 + layer * 6; // More particles in outer rings
+                const layerOpacity = 0.85 - layer * 0.1;
+                const layerEmissive = 0.7 - layer * 0.1;
 
                 // Create circular arrangement of particles for this wave layer
                 for (let p = 0; p < particlesInRing; p++) {

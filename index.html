@@ -1187,6 +1187,21 @@
                 currentScene.push(particle);
                 scene.add(particle);
             }
+
+            // Central warm diamond/octahedron
+            const diamondGeometry = new THREE.OctahedronGeometry(1.5, 0);
+            const diamondMaterial = new THREE.MeshStandardMaterial({
+                color: 0xf5c77e,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0xe8a735,
+                emissiveIntensity: 0.3
+            });
+            const diamond = new THREE.Mesh(diamondGeometry, diamondMaterial);
+            diamond.userData.rotationSpeed = { x: 0.002, y: 0.004, z: 0.001 };
+            diamond.userData.pulse = true;
+            currentScene.push(diamond);
+            scene.add(diamond);
         }
 
         // Film noir environment

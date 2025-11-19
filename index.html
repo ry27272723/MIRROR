@@ -238,15 +238,15 @@
         const scenes = [
             {
                 name: 'Frozen Memory',
-                description: 'A world suspended in ice, where time crystallizes into still moments',
-                color: 0x4a90e2,
+                description: 'Where time crystallizes into still moments, suspended in eternal ice',
+                color: 0x89CFF0,
                 filter: 'cold',
-                fogColor: 0x89CFF0,
+                fogColor: 0xb8e0f5,
                 ambientLight: 0x6699cc
             },
             {
                 name: 'Golden Hours',
-                description: 'Warm light filtered through nostalgia, soft and sepia-toned',
+                description: 'Ribbons of light dance through amber warmth, weaving forgotten dreams',
                 color: 0xe8a735,
                 filter: 'warm',
                 fogColor: 0xffd9a3,
@@ -269,28 +269,28 @@
                 ambientLight: 0xaa88cc
             },
             {
-                name: 'Emerald Whisper',
-                description: 'Living fragments of nature drift through verdant mist and memory',
-                color: 0x2d8659,
-                filter: 'nature',
-                fogColor: 0x7cb892,
-                ambientLight: 0x66bb88
+                name: 'Infinity',
+                description: 'Endless stairs spiral through transparent realms of possibility',
+                color: 0xf0f0f5,
+                filter: 'infinity',
+                fogColor: 0xe8e8f0,
+                ambientLight: 0xccccdd
             },
             {
-                name: 'Amber Twilight',
-                description: 'The last light of day burns slow, casting everything in liquid gold',
-                color: 0xd97941,
-                filter: 'sunset',
-                fogColor: 0xf5a962,
+                name: 'Twilight',
+                description: 'Between day and night, crystalline forms glow with fading light',
+                color: 0xff8c42,
+                filter: 'twilight',
+                fogColor: 0xffa566,
                 ambientLight: 0xff9955
             },
             {
-                name: 'Crimson Echo',
-                description: 'Deep rose petals fall through time, whispering secrets in burgundy',
-                color: 0x8b2f47,
-                filter: 'crimson',
-                fogColor: 0xc85a72,
-                ambientLight: 0xaa5566
+                name: 'Echo',
+                description: 'Verdant rings ripple outward, carrying whispers through time',
+                color: 0x2d8659,
+                filter: 'echo',
+                fogColor: 0x7cb892,
+                ambientLight: 0x66bb88
             }
         ];
 
@@ -1022,14 +1022,14 @@
                 case 'dreamy':
                     createDreamyEnvironment();
                     break;
-                case 'nature':
-                    createNatureEnvironment();
+                case 'infinity':
+                    createInfinityEnvironment();
                     break;
-                case 'sunset':
-                    createSunsetEnvironment();
+                case 'twilight':
+                    createTwilightEnvironment();
                     break;
-                case 'crimson':
-                    createCrimsonEnvironment();
+                case 'echo':
+                    createEchoEnvironment();
                     break;
             }
         }
@@ -1145,37 +1145,39 @@
             scene.add(star);
         }
 
-        // Warm vintage environment
+        // Golden Hours - ribbons of light
         function createWarmEnvironment() {
-            // Floating vintage frames and objects
-            for (let i = 0; i < 20; i++) {
-                const geometry = new THREE.TorusGeometry(0.3, 0.05, 8, 20);
+            // Floating golden ribbons
+            for (let i = 0; i < 25; i++) {
+                const curve = new THREE.CatmullRomCurve3([
+                    new THREE.Vector3((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3),
+                    new THREE.Vector3((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3),
+                    new THREE.Vector3((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3)
+                ]);
+                const geometry = new THREE.TubeGeometry(curve, 20, 0.05, 8, false);
                 const material = new THREE.MeshStandardMaterial({
-                    color: 0xd4a373,
-                    metalness: 0.7,
-                    roughness: 0.4
+                    color: 0xffd700,
+                    metalness: 0.8,
+                    roughness: 0.2,
+                    emissive: 0xe8a735,
+                    emissiveIntensity: 0.4
                 });
-                const ring = new THREE.Mesh(geometry, material);
+                const ribbon = new THREE.Mesh(geometry, material);
 
-                ring.position.set(
+                ribbon.position.set(
                     (Math.random() - 0.5) * 15,
                     (Math.random() - 0.5) * 15,
                     (Math.random() - 0.5) * 15
                 );
-                ring.rotation.set(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
-                );
 
-                ring.userData.rotationSpeed = {
-                    x: (Math.random() - 0.5) * 0.008,
-                    y: (Math.random() - 0.5) * 0.008,
-                    z: (Math.random() - 0.5) * 0.008
+                ribbon.userData.rotationSpeed = {
+                    x: (Math.random() - 0.5) * 0.005,
+                    y: (Math.random() - 0.5) * 0.005,
+                    z: (Math.random() - 0.5) * 0.005
                 };
 
-                currentScene.push(ring);
-                scene.add(ring);
+                currentScene.push(ribbon);
+                scene.add(ribbon);
             }
 
             // Central warm diamond/octahedron
@@ -1290,139 +1292,109 @@
             scene.add(torus);
         }
 
-        // Emerald nature environment
-        function createNatureEnvironment() {
-            // Floating leaves and organic shapes
-            for (let i = 0; i < 40; i++) {
-                // Create leaf-like shapes using cones
-                const geometry = new THREE.ConeGeometry(0.15, 0.4, 4);
+        // Infinity - white stairs and transparent cubes
+        function createInfinityEnvironment() {
+            // Create floating stairs
+            for (let i = 0; i < 15; i++) {
+                const geometry = new THREE.BoxGeometry(1.5, 0.1, 0.5);
                 const material = new THREE.MeshStandardMaterial({
-                    color: i % 3 === 0 ? 0x4a9d5f : (i % 3 === 1 ? 0x5db36e : 0x7ec98f),
-                    metalness: 0.2,
-                    roughness: 0.6,
+                    color: 0xffffff,
+                    metalness: 0.3,
+                    roughness: 0.4,
                     transparent: true,
-                    opacity: 0.7 + Math.random() * 0.2,
-                    emissive: 0x2d5a3f,
-                    emissiveIntensity: 0.1
+                    opacity: 0.9
                 });
-                const leaf = new THREE.Mesh(geometry, material);
+                const stair = new THREE.Mesh(geometry, material);
 
-                leaf.position.set(
+                // Spiral staircase pattern
+                const angle = (i / 15) * Math.PI * 4;
+                const radius = 3 + Math.sin(angle * 0.5) * 0.5;
+                stair.position.set(
+                    Math.cos(angle) * radius,
+                    i * 0.4 - 3,
+                    Math.sin(angle) * radius
+                );
+                stair.rotation.y = angle;
+
+                currentScene.push(stair);
+                scene.add(stair);
+            }
+
+            // Floating transparent cubes
+            for (let i = 0; i < 30; i++) {
+                const size = 0.2 + Math.random() * 0.4;
+                const geometry = new THREE.BoxGeometry(size, size, size);
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0xffffff,
+                    metalness: 0.8,
+                    roughness: 0.2,
+                    transparent: true,
+                    opacity: 0.3 + Math.random() * 0.3
+                });
+                const cube = new THREE.Mesh(geometry, material);
+
+                cube.position.set(
                     (Math.random() - 0.5) * 18,
                     (Math.random() - 0.5) * 18,
                     (Math.random() - 0.5) * 18
                 );
-                leaf.rotation.set(
+                cube.rotation.set(
                     Math.random() * Math.PI,
                     Math.random() * Math.PI,
                     Math.random() * Math.PI
                 );
 
-                leaf.userData.rotationSpeed = {
-                    x: (Math.random() - 0.5) * 0.006,
-                    y: (Math.random() - 0.5) * 0.006,
-                    z: (Math.random() - 0.5) * 0.006
+                cube.userData.rotationSpeed = {
+                    x: (Math.random() - 0.5) * 0.008,
+                    y: (Math.random() - 0.5) * 0.008,
+                    z: (Math.random() - 0.5) * 0.008
                 };
 
-                leaf.userData.float = {
-                    speed: 0.0003 + Math.random() * 0.0005,
-                    offset: Math.random() * Math.PI * 2,
-                    amplitude: 0.4 + Math.random() * 0.4
-                };
-
-                currentScene.push(leaf);
-                scene.add(leaf);
+                currentScene.push(cube);
+                scene.add(cube);
             }
-
-            // Central organic tetrahedron (pyramid)
-            const pyramidGeometry = new THREE.TetrahedronGeometry(1.6, 0);
-            const pyramidMaterial = new THREE.MeshStandardMaterial({
-                color: 0x48a562,
-                metalness: 0.4,
-                roughness: 0.5,
-                emissive: 0x2d5a3f,
-                emissiveIntensity: 0.4
-            });
-            const pyramid = new THREE.Mesh(pyramidGeometry, pyramidMaterial);
-            pyramid.userData.rotationSpeed = { x: 0.002, y: 0.003, z: 0.001 };
-            pyramid.userData.pulse = true;
-            currentScene.push(pyramid);
-            scene.add(pyramid);
         }
 
-        // Amber sunset environment
-        function createSunsetEnvironment() {
-            // Floating embers and light particles
-            for (let i = 0; i < 50; i++) {
-                const size = 0.08 + Math.random() * 0.15;
-                const geometry = new THREE.SphereGeometry(size, 8, 8);
+        // Twilight - cone crystals and spheres
+        function createTwilightEnvironment() {
+            // Floating glowing spheres
+            for (let i = 0; i < 40; i++) {
+                const size = 0.1 + Math.random() * 0.2;
+                const geometry = new THREE.SphereGeometry(size, 16, 16);
                 const material = new THREE.MeshStandardMaterial({
-                    color: i % 2 === 0 ? 0xff8c42 : 0xffa566,
-                    metalness: 0.4,
+                    color: 0xff9955,
+                    metalness: 0.5,
                     roughness: 0.3,
                     transparent: true,
-                    opacity: 0.6 + Math.random() * 0.3,
-                    emissive: i % 2 === 0 ? 0xff6622 : 0xdd7744,
-                    emissiveIntensity: 0.5 + Math.random() * 0.3
+                    opacity: 0.7 + Math.random() * 0.2,
+                    emissive: 0xff7733,
+                    emissiveIntensity: 0.6 + Math.random() * 0.3
                 });
-                const ember = new THREE.Mesh(geometry, material);
+                const sphere = new THREE.Mesh(geometry, material);
 
-                ember.position.set(
+                sphere.position.set(
                     (Math.random() - 0.5) * 20,
                     (Math.random() - 0.5) * 20,
                     (Math.random() - 0.5) * 20
                 );
 
-                ember.userData.float = {
-                    speed: 0.0004 + Math.random() * 0.0008,
+                sphere.userData.float = {
+                    speed: 0.0003 + Math.random() * 0.0005,
                     offset: Math.random() * Math.PI * 2,
-                    amplitude: 0.5 + Math.random() * 0.6
+                    amplitude: 0.4 + Math.random() * 0.4
                 };
 
-                ember.userData.pulse = true;
+                sphere.userData.pulse = true;
 
-                currentScene.push(ember);
-                scene.add(ember);
+                currentScene.push(sphere);
+                scene.add(sphere);
             }
 
-            // Add some larger glowing rings
-            for (let i = 0; i < 8; i++) {
-                const geometry = new THREE.TorusGeometry(0.4, 0.08, 8, 16);
-                const material = new THREE.MeshStandardMaterial({
-                    color: 0xf49d5e,
-                    metalness: 0.6,
-                    roughness: 0.2,
-                    emissive: 0xe67326,
-                    emissiveIntensity: 0.4
-                });
-                const ring = new THREE.Mesh(geometry, material);
-
-                ring.position.set(
-                    (Math.random() - 0.5) * 12,
-                    (Math.random() - 0.5) * 12,
-                    (Math.random() - 0.5) * 12
-                );
-                ring.rotation.set(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
-                );
-
-                ring.userData.rotationSpeed = {
-                    x: (Math.random() - 0.5) * 0.01,
-                    y: (Math.random() - 0.5) * 0.01,
-                    z: (Math.random() - 0.5) * 0.01
-                };
-
-                currentScene.push(ring);
-                scene.add(ring);
-            }
-
-            // Central sunset cone/crystal
+            // Central large cone crystal
             const coneGeometry = new THREE.ConeGeometry(1.2, 2.5, 6);
             const coneMaterial = new THREE.MeshStandardMaterial({
                 color: 0xff9955,
-                metalness: 0.6,
+                metalness: 0.7,
                 roughness: 0.2,
                 emissive: 0xff7733,
                 emissiveIntensity: 0.6
@@ -1432,98 +1404,95 @@
             cone.userData.pulse = true;
             currentScene.push(cone);
             scene.add(cone);
+
+            // Orbiting sphere around cone
+            const orbitGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const orbitMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffaa66,
+                metalness: 0.6,
+                roughness: 0.3,
+                emissive: 0xff8844,
+                emissiveIntensity: 0.5
+            });
+            const orbitSphere = new THREE.Mesh(orbitGeometry, orbitMaterial);
+            orbitSphere.position.set(2, 0, 0);
+            orbitSphere.userData.orbitSpeed = 0.003;
+            orbitSphere.userData.isOrbiting = true;
+            currentScene.push(orbitSphere);
+            scene.add(orbitSphere);
         }
 
-        // Crimson rose environment
-        function createCrimsonEnvironment() {
-            // Falling rose petals
-            for (let i = 0; i < 60; i++) {
-                // Create petal-like shapes using thin triangles
-                const geometry = new THREE.ConeGeometry(0.12, 0.25, 3);
+        // Echo - green rings and waves
+        function createEchoEnvironment() {
+            // Expanding ring waves
+            for (let i = 0; i < 12; i++) {
+                const geometry = new THREE.TorusGeometry(1.5 + i * 0.4, 0.08, 8, 32);
                 const material = new THREE.MeshStandardMaterial({
-                    color: i % 3 === 0 ? 0xa83c58 : (i % 3 === 1 ? 0x8b2f47 : 0xc85a72),
-                    metalness: 0.3,
-                    roughness: 0.5,
+                    color: 0x48a562,
+                    metalness: 0.5,
+                    roughness: 0.4,
                     transparent: true,
-                    opacity: 0.7 + Math.random() * 0.2,
-                    emissive: 0x5a1a2a,
-                    emissiveIntensity: 0.2
+                    opacity: 0.6 - i * 0.04,
+                    emissive: 0x2d8659,
+                    emissiveIntensity: 0.4 - i * 0.03
                 });
-                const petal = new THREE.Mesh(geometry, material);
+                const ring = new THREE.Mesh(geometry, material);
 
-                petal.position.set(
-                    (Math.random() - 0.5) * 18,
-                    (Math.random() - 0.5) * 18,
-                    (Math.random() - 0.5) * 18
-                );
-                petal.rotation.set(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
-                );
+                ring.rotation.x = Math.PI / 2;
+                ring.position.y = i * 0.2 - 1.2;
+                ring.userData.expandSpeed = 0.002;
+                ring.userData.isWave = true;
+                ring.userData.waveIndex = i;
 
-                petal.userData.rotationSpeed = {
-                    x: (Math.random() - 0.5) * 0.008,
-                    y: (Math.random() - 0.5) * 0.008,
-                    z: (Math.random() - 0.5) * 0.008
-                };
-
-                petal.userData.float = {
-                    speed: 0.0002 + Math.random() * 0.0004,
-                    offset: Math.random() * Math.PI * 2,
-                    amplitude: 0.6 + Math.random() * 0.4
-                };
-
-                currentScene.push(petal);
-                scene.add(petal);
+                currentScene.push(ring);
+                scene.add(ring);
             }
 
-            // Glowing burgundy orbs
-            for (let i = 0; i < 15; i++) {
-                const geometry = new THREE.SphereGeometry(0.1 + Math.random() * 0.1, 16, 16);
+            // Floating green particles
+            for (let i = 0; i < 30; i++) {
+                const size = 0.05 + Math.random() * 0.1;
+                const geometry = new THREE.SphereGeometry(size, 8, 8);
                 const material = new THREE.MeshStandardMaterial({
-                    color: 0xaa4466,
+                    color: 0x5db36e,
                     metalness: 0.6,
-                    roughness: 0.2,
+                    roughness: 0.3,
                     transparent: true,
-                    opacity: 0.5,
-                    emissive: 0x881133,
-                    emissiveIntensity: 0.6
+                    opacity: 0.7,
+                    emissive: 0x3a7a4d,
+                    emissiveIntensity: 0.5
                 });
-                const orb = new THREE.Mesh(geometry, material);
+                const particle = new THREE.Mesh(geometry, material);
 
-                orb.position.set(
+                particle.position.set(
                     (Math.random() - 0.5) * 15,
                     (Math.random() - 0.5) * 15,
                     (Math.random() - 0.5) * 15
                 );
 
-                orb.userData.float = {
-                    speed: 0.0003 + Math.random() * 0.0005,
+                particle.userData.float = {
+                    speed: 0.0004 + Math.random() * 0.0006,
                     offset: Math.random() * Math.PI * 2,
-                    amplitude: 0.4 + Math.random() * 0.3
+                    amplitude: 0.3 + Math.random() * 0.3
                 };
 
-                orb.userData.pulse = true;
-
-                currentScene.push(orb);
-                scene.add(orb);
+                currentScene.push(particle);
+                scene.add(particle);
             }
 
-            // Central rose knot
-            const knotGeometry = new THREE.TorusKnotGeometry(0.8, 0.3, 100, 16);
-            const knotMaterial = new THREE.MeshStandardMaterial({
-                color: 0xa83c58,
-                metalness: 0.6,
-                roughness: 0.2,
-                emissive: 0x8b2f47,
+            // Central green torus
+            const torusGeometry = new THREE.TorusGeometry(1.2, 0.4, 16, 64);
+            const torusMaterial = new THREE.MeshStandardMaterial({
+                color: 0x48a562,
+                metalness: 0.7,
+                roughness: 0.3,
+                emissive: 0x2d8659,
                 emissiveIntensity: 0.5
             });
-            const knot = new THREE.Mesh(knotGeometry, knotMaterial);
-            knot.userData.rotationSpeed = { x: 0.003, y: 0.005, z: 0.002 };
-            knot.userData.pulse = true;
-            currentScene.push(knot);
-            scene.add(knot);
+            const torus = new THREE.Mesh(torusGeometry, torusMaterial);
+            torus.userData.rotationSpeed = { x: 0.002, y: 0.004, z: 0.001 };
+            torus.userData.pulse = true;
+            currentScene.push(torus);
+            scene.add(torus);
         }
 
         // Back button handler - return without completing scene
@@ -1663,6 +1632,19 @@
                     if (obj.userData.pulse) {
                         const scale = 1 + Math.sin(time * 2) * 0.05;
                         obj.scale.set(scale, scale, scale);
+                    }
+
+                    // Orbiting sphere (for Twilight scene)
+                    if (obj.userData.isOrbiting) {
+                        const orbitAngle = time * obj.userData.orbitSpeed;
+                        obj.position.x = Math.cos(orbitAngle) * 2;
+                        obj.position.z = Math.sin(orbitAngle) * 2;
+                    }
+
+                    // Wave rings (for Echo scene)
+                    if (obj.userData.isWave) {
+                        const waveScale = 1 + Math.sin(time * 2 + obj.userData.waveIndex * 0.5) * 0.1;
+                        obj.scale.set(waveScale, 1, waveScale);
                     }
                 });
 
